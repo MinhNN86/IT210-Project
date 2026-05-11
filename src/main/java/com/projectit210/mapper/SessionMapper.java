@@ -18,11 +18,16 @@ public class SessionMapper {
     public SessionResponse toResponse(MentoringSession session) {
         if (session == null) return null;
 
-        // Kiểm tra có thể hủy: trước 24 giờ so với thời điểm tư vấn và trạng thái PENDING
+        // Kiểm tra có thể hủy:
+        // - PENDING: trước 24 giờ so với thời điểm tư vấn
+        // - CONFIRMED: chưa qua thời gian kết thúc buổi tư vấn
         boolean canCancel = false;
         if (session.getStatus() == SessionStatus.PENDING) {
             LocalDateTime sessionDateTime = LocalDateTime.of(session.getSessionDate(), session.getStartTime());
             canCancel = sessionDateTime.minusHours(24).isAfter(LocalDateTime.now());
+        } else if (session.getStatus() == SessionStatus.CONFIRMED) {
+            LocalDateTime sessionEndDateTime = LocalDateTime.of(session.getSessionDate(), session.getEndTime());
+            canCancel = sessionEndDateTime.isAfter(LocalDateTime.now());
         }
 
         return SessionResponse.builder()

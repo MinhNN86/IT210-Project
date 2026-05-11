@@ -84,12 +84,19 @@ public class LecturerController {
             User user = (User) request.getAttribute(AppConstant.CURRENT_USER);
             Lecturer lecturer = lecturerRepository.findByUserId(user.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Giảng viên không tồn tại"));
+            MentoringSession session = sessionRepository.findById(sessionId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Buổi tư vấn không tồn tại"));
+            boolean wasConfirmed = session.getStatus() == SessionStatus.CONFIRMED;
             sessionService.cancelSessionByLecturer(sessionId, lecturer.getId(), reason);
             redirectAttributes.addFlashAttribute("successMessage", "Đã hủy buổi tư vấn thành công!");
+            if (wasConfirmed) {
+                return "redirect:/lecturer/confirmed-sessions";
+            }
+            return "redirect:/lecturer/pending-sessions";
         } catch (BadRequestException | ResourceNotFoundException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/lecturer/confirmed-sessions";
         }
-        return "redirect:/lecturer/pending-sessions";
     }
 
     @PostMapping("/confirm-session/{sessionId}")

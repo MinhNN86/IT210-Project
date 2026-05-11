@@ -134,6 +134,12 @@ public class MentoringSessionServiceImpl implements MentoringSessionService {
             throw new BadRequestException("Chỉ có thể hủy buổi tư vấn đang ở trạng thái 'Chờ xác nhận' hoặc 'Đã xác nhận'");
         }
 
+        // Kiểm tra thời gian: không hủy được nếu đã qua thời gian tư vấn
+        LocalDateTime sessionEndDateTime = LocalDateTime.of(session.getSessionDate(), session.getEndTime());
+        if (sessionEndDateTime.isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Không thể hủy buổi tư vấn đã qua thời gian diễn ra");
+        }
+
         session.setStatus(SessionStatus.CANCELLED);
         session.setCancelReason(reason);
         session.setCancelledAt(LocalDateTime.now());
