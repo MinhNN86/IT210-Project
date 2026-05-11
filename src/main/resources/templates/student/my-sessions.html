@@ -33,7 +33,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr th:each="s : ${sessions}">
+            <tr th:each="s : ${sessions}" th:attr="data-sid=${s.id}">
               <td
                 th:text="${'#' + s.id}"
                 class="text-indigo-300 font-mono text-xs"
@@ -62,26 +62,44 @@
                 >
               </td>
               <td class="text-right">
-                <form
-                  th:if="${s.canCancel}"
-                  th:action="@{/student/sessions/{id}/cancel(id=${s.id})}"
-                  method="post"
-                  class="inline-block"
-                  onsubmit="return confirm('Bạn có chắc muốn hủy lịch này?');"
+                <div
+                  class="flex items-center justify-end gap-2"
+                  th:attr="data-actions=${s.id}"
                 >
-                  <button
-                    type="submit"
-                    class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  <a
+                    th:if="${s.status == 'CONFIRMED' && s.meetingActive}"
+                    th:href="@{/meeting/{id}(id=${s.id})}"
+                    class="join-meeting-btn inline-flex items-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors animate-[pulse_2s_ease-in-out_infinite]"
                   >
-                    <i class="fas fa-times mr-1"></i> Hủy
-                  </button>
-                </form>
-                <span
-                  th:if="${!s.canCancel && s.status == 'PENDING'}"
-                  class="text-slate-500 text-xs flex items-center justify-end gap-1"
-                >
-                  <i class="fas fa-lock"></i> Không thể hủy (< 24h)
-                </span>
+                    <i class="fas fa-door-open"></i> Vào phòng
+                  </a>
+                  <span
+                    th:if="${s.status == 'CONFIRMED' && !s.meetingActive}"
+                    class="meeting-waiting text-slate-500 text-xs flex items-center gap-1"
+                  >
+                    <i class="fas fa-hourglass-half"></i> Chờ giảng viên...
+                  </span>
+                  <form
+                    th:if="${s.canCancel}"
+                    th:action="@{/student/sessions/{id}/cancel(id=${s.id})}"
+                    method="post"
+                    class="inline-block"
+                    onsubmit="return confirm('Bạn có chắc muốn hủy lịch này?');"
+                  >
+                    <button
+                      type="submit"
+                      class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      <i class="fas fa-times mr-1"></i> Hủy
+                    </button>
+                  </form>
+                  <span
+                    th:if="${!s.canCancel && s.status == 'PENDING'}"
+                    class="text-slate-500 text-xs flex items-center justify-end gap-1"
+                  >
+                    <i class="fas fa-lock"></i> Không thể hủy (< 24h)
+                  </span>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -96,5 +114,72 @@
         <p class="text-lg">Chưa có lịch hẹn nào</p>
       </div>
     </div>
+
+    <th:block th:each="s : ${sessions}">
+      <th:block th:if="${s.status == 'CONFIRMED' && !s.meetingActive}">
+        <input type="hidden" class="poll-session-id" th:value="${s.id}" />
+      </th:block>
+    </th:block>
+    <script>
+      function getPollSessionIds() {
+        var ids = [];
+        document.querySelectorAll(".poll-session-id").forEach(function (el) {
+          ids.push(parseInt(el.value));
+        });
+        return ids;
+      }
+
+      function pollMeetingStatus() {
+        var ids = getPollSessionIds();
+        if (ids.length === 0) return;
+        ids.forEach(function (sid) {
+          fetch("/meeting/" + sid + "/status")
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (data) {
+              if (data.meetingActive) {
+                replaceWaitingWithJoinButton(sid);
+                var input = document.querySelector(
+                  '.poll-session-id[value="' + sid + '"]',
+                );
+                if (input) input.remove();
+              }
+            })
+            .catch(function () {});
+        });
+      }
+
+      function replaceWaitingWithJoinButton(sid) {
+        var container = document.querySelector(
+          '[data-sid="' + sid + '"] [data-actions="' + sid + '"]',
+        );
+        if (!container) return;
+        var waiting = container.querySelector(".meeting-waiting");
+        if (!waiting) return;
+        waiting.remove();
+        var a = document.createElement("a");
+        a.href = "/meeting/" + sid;
+        a.className =
+          "join-meeting-btn inline-flex items-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors";
+        a.style.animation = "pulse 2s ease-in-out infinite";
+        a.innerHTML = '<i class="fas fa-door-open"></i> Vào phòng';
+        container.insertBefore(a, container.firstChild);
+      }
+
+      setInterval(pollMeetingStatus, 5000);
+      pollMeetingStatus();
+    </script>
+    <style>
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+    </style>
   </div>
 </html>

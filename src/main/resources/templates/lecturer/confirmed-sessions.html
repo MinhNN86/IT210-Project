@@ -6,7 +6,8 @@
   <div th:fragment="content">
     <div class="mb-8">
       <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
-        <i class="fas fa-clipboard-check text-emerald-400"></i> Đã xác nhận - Chờ đánh giá
+        <i class="fas fa-clipboard-check text-emerald-400"></i> Đã xác nhận -
+        Chờ đánh giá
       </h1>
     </div>
 
@@ -47,6 +48,17 @@
               ></td>
               <td class="text-right">
                 <div class="flex items-center justify-end gap-2">
+                  <a
+                    th:href="@{/meeting/{id}(id=${s.id})}"
+                    th:class="${s.meetingActive} ? 'inline-flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors' : 'inline-flex items-center gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors'"
+                  >
+                    <i
+                      th:class="${s.meetingActive} ? 'fas fa-door-open' : 'fas fa-video'"
+                    ></i>
+                    <span
+                      th:text="${s.meetingActive} ? 'Vào phòng' : 'Mở phòng'"
+                    ></span>
+                  </a>
                   <a
                     th:href="@{/lecturer/evaluate/{id}(id=${s.id})}"
                     class="inline-flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors"

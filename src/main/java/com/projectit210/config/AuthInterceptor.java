@@ -55,6 +55,11 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        if (path.startsWith("/meeting/") && userRole != Role.STUDENT && userRole != Role.LECTURER) {
+            response.sendRedirect("/" + userRole.name().toLowerCase() + "/dashboard");
+            return false;
+        }
+
         return true;
     }
 

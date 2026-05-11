@@ -1,0 +1,753 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="'Phòng họp #' + ${sessionId}">Meeting Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "sans-serif"] } } } };
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; }
+    body { background: #0f172a; color: #e2e8f0; }
+
+    .meeting-layout { width: 100%; height: 100%; display: flex; flex-direction: column; }
+
+    .top-bar {
+      height: 56px; flex-shrink: 0;
+      background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(6, 182, 212, 0.1);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; z-index: 20;
+    }
+    .top-bar .meeting-title { font-weight: 600; font-size: 15px; }
+    .top-bar .meeting-info { font-size: 13px; color: #94a3b8; }
+    .top-bar .timer { font-size: 13px; color: #64748b; font-variant-numeric: tabular-nums; }
+
+    /* ---- NORMAL MODE ---- */
+    .video-grid {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      gap: 16px; padding: 16px 24px; min-height: 0;
+    }
+    .video-grid .video-wrapper {
+      flex: 1; max-width: 50%; height: 100%; position: relative;
+      background: #1e293b; border-radius: 16px; overflow: hidden;
+      border: 1px solid rgba(6, 182, 212, 0.15);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .video-grid .video-wrapper video {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+
+    /* ---- SHARING MODE ---- */
+    .sharing-layout {
+      flex: 1; display: flex; gap: 12px; padding: 16px 24px; min-height: 0;
+    }
+    .sharing-main {
+      flex: 1; background: #0a0f1a; border-radius: 16px; overflow: hidden;
+      border: 1px solid rgba(6, 182, 212, 0.1);
+      display: flex; align-items: center; justify-content: center; position: relative;
+    }
+    .sharing-main video {
+      width: 100%; height: 100%; object-fit: contain;
+    }
+    .sharing-sidebar {
+      width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;
+    }
+    .sharing-sidebar .pip-video {
+      flex: 1; background: #1e293b; border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(6, 182, 212, 0.12);
+      display: flex; align-items: center; justify-content: center; position: relative;
+      min-height: 0;
+    }
+    .sharing-sidebar .pip-video video {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+
+    .video-wrapper .label, .pip-video .label, .sharing-main .label {
+      position: absolute; bottom: 8px; left: 8px;
+      background: rgba(0,0,0,0.65); padding: 3px 10px; border-radius: 6px;
+      font-size: 12px; font-weight: 500; z-index: 2;
+    }
+    .video-wrapper .avatar-placeholder, .pip-video .avatar-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: 8px; color: #64748b;
+    }
+    .video-wrapper .avatar-placeholder i, .pip-video .avatar-placeholder i {
+      font-size: 48px; opacity: 0.3;
+    }
+    .video-wrapper .avatar-placeholder span, .pip-video .avatar-placeholder span {
+      font-size: 12px;
+    }
+    .sharing-main .avatar-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: 8px; color: #475569;
+    }
+    .sharing-main .avatar-placeholder i { font-size: 80px; opacity: 0.15; }
+    .sharing-main .avatar-placeholder span { font-size: 14px; }
+
+    .controls-bar {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 14px; z-index: 30;
+      background: rgba(30, 41, 59, 0.92); backdrop-filter: blur(12px);
+      border: 1px solid rgba(6, 182, 212, 0.1);
+      padding: 10px 20px; border-radius: 50px;
+    }
+    .ctrl-btn {
+      width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      transition: all 0.2s; background: rgba(148, 163, 184, 0.15); color: #e2e8f0;
+    }
+    .ctrl-btn:hover { background: rgba(148, 163, 184, 0.3); }
+    .ctrl-btn.active { background: #e2e8f0; color: #0f172a; }
+    .ctrl-btn.danger-end {
+      background: #ef4444; color: white; width: auto; border-radius: 50px;
+      padding: 0 20px; gap: 6px; font-size: 13px; font-weight: 500;
+    }
+    .ctrl-btn.danger-end:hover { background: #dc2626; }
+
+    .status-toast {
+      position: absolute; top: 72px; left: 50%; transform: translateX(-50%);
+      background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(8px);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      padding: 8px 20px; border-radius: 50px; font-size: 13px; z-index: 40;
+      transition: opacity 0.3s; opacity: 0; pointer-events: none;
+    }
+    .status-toast.show { opacity: 1; }
+
+    .hidden-layout { display: none !important; }
+
+    @media (max-width: 768px) {
+      .video-grid { flex-direction: column; padding: 8px 12px; }
+      .video-grid .video-wrapper { max-width: 100%; width: 100%; }
+      .sharing-layout { flex-direction: column; padding: 8px 12px; }
+      .sharing-sidebar { width: 100%; flex-direction: row; flex-shrink: 1; max-height: 110px; }
+      .sharing-sidebar .pip-video { flex: 1; min-width: 0; }
+      .controls-bar { padding: 8px 14px; gap: 8px; bottom: 14px; }
+      .ctrl-btn { width: 38px; height: 38px; font-size: 16px; }
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  </style>
+</head>
+<body>
+
+<div class="meeting-layout">
+  <div class="top-bar">
+    <div>
+      <div class="meeting-title"><i class="fas fa-video text-cyan-400 mr-2"></i>Phòng họp <span th:text="'#' + ${sessionId}"></span></div>
+      <div class="meeting-info" th:text="${sessionDate + '  ' + startTime + ' - ' + endTime}"></div>
+    </div>
+    <div class="timer" id="callTimer">00:00</div>
+  </div>
+
+  <div class="status-toast" id="statusToast"></div>
+
+  <!-- NORMAL MODE: 2 cameras side by side -->
+  <div class="video-grid" id="normalLayout">
+    <div class="video-wrapper" id="localWrapper">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <div class="avatar-placeholder" id="localPlaceholder">
+        <i class="fas fa-user-circle"></i>
+        <span th:text="${userName}">You</span>
+      </div>
+      <div class="label" th:text="${userName} + ' (Bạn)'"></div>
+    </div>
+    <div class="video-wrapper" id="remoteWrapper">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <div class="avatar-placeholder" id="remotePlaceholder">
+        <i class="fas fa-user-circle"></i>
+        <span>Đang chờ...</span>
+      </div>
+      <div class="label" id="remoteLabel">Đối phương</div>
+    </div>
+  </div>
+
+  <!-- SHARING MODE: Large screen + small cameras sidebar -->
+  <div class="sharing-layout hidden-layout" id="sharingLayout">
+    <div class="sharing-main" id="screenMain">
+      <video id="screenVideo" autoplay playsinline></video>
+      <div class="avatar-placeholder" id="screenPlaceholder">
+        <i class="fas fa-desktop"></i>
+        <span>Màn hình chia sẻ</span>
+      </div>
+      <div class="label" id="screenLabel">Màn hình</div>
+    </div>
+    <div class="sharing-sidebar" id="sharingSidebar">
+      <div class="pip-video" id="pipLocal">
+        <video id="pipLocalVideo" autoplay muted playsinline></video>
+        <div class="avatar-placeholder" id="pipLocalPlaceholder">
+          <i class="fas fa-user-circle"></i>
+          <span th:text="${userName}">You</span>
+        </div>
+        <div class="label" th:text="${userName} + ' (Bạn)'"></div>
+      </div>
+      <div class="pip-video" id="pipRemote">
+        <video id="pipRemoteVideo" autoplay playsinline></video>
+        <div class="avatar-placeholder" id="pipRemotePlaceholder">
+          <i class="fas fa-user-circle"></i>
+          <span>Đang chờ...</span>
+        </div>
+        <div class="label" id="pipRemoteLabel">Đối phương</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="controls-bar">
+  <button class="ctrl-btn" id="btnMic" title="Tắt/Bật mic" onclick="toggleMute()">
+    <i class="fas fa-microphone"></i>
+  </button>
+  <button class="ctrl-btn" id="btnVideo" title="Tắt/Bật camera" onclick="toggleVideo()">
+    <i class="fas fa-video"></i>
+  </button>
+  <button th:if="${userRole == 'LECTURER'}" class="ctrl-btn" id="btnScreen" title="Chia sẻ màn hình" onclick="toggleScreenShare()">
+    <i class="fas fa-desktop"></i>
+  </button>
+  <button th:if="${userRole == 'LECTURER'}" class="ctrl-btn danger-end" title="Đóng phòng" onclick="closeRoom()">
+    <i class="fas fa-door-closed"></i> Đóng phòng
+  </button>
+  <button th:if="${userRole == 'STUDENT'}" class="ctrl-btn danger-end" title="Rời phòng" onclick="hangUp()">
+    <i class="fas fa-phone-slash"></i> Rời phòng
+  </button>
+</div>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  var SESSION_ID = /*[[${sessionId}]]*/ 0;
+  var USER_NAME = /*[[${userName}]]*/ '';
+  var USER_ROLE = /*[[${userRole}]]*/ '';
+  /*]]>*/
+
+  var ws = null;
+  var pc = null;
+  var localStream = null;
+  var screenStream = null;
+  var isMuted = false;
+  var isVideoOff = false;
+  var isScreenSharing = false;
+  var remoteIsSharing = false;
+  var remoteCameraStream = null;
+  var remoteScreenStream = null;
+  var cameraStreamId = null;   // nhận dạng stream camera của remote
+  var screenStreamId = null;   // nhận dạng stream screen của remote
+  var callStartTime = null;
+  var timerInterval = null;
+  var localMediaReady = false;
+  var hasRemotePeer = false;
+  var wsConnected = false;      // tránh gọi setupLocalMedia nhiều lần
+  var pendingScreenShare = false; // chờ state stable để add screen track
+
+  var iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
+
+  function connectWebSocket() {
+    var wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/meeting/' + SESSION_ID;
+    ws = new WebSocket(wsUrl);
+    ws.onopen = function() {
+      // Chỉ gọi setupLocalMedia lần đầu tiên kết nối
+      if (!wsConnected) { wsConnected = true; setupLocalMedia(); }
+    };
+    ws.onmessage = function(event) { handleSignal(JSON.parse(event.data)); };
+    ws.onclose = function() {
+      showToast('Kết nối bị ngắt. Thử lại...');
+      // Không phá PC khi WS ngắt tạm thời, chỉ reconnect WS
+      setTimeout(connectWebSocket, 3000);
+    };
+    ws.onerror = function() {};
+  }
+
+  function sendSignal(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data));
+  }
+
+  function handleSignal(msg) {
+    switch (msg.type) {
+      case 'user-joined':
+        showToast(msg.userName + ' đã tham gia');
+        setRemoteName(msg.userName);
+        hasRemotePeer = true;
+        if (USER_ROLE === 'LECTURER' && localMediaReady) initiateConnection();
+        break;
+
+      case 'user-left':
+        showToast(msg.userName + ' đã rời');
+        hasRemotePeer = false;
+        remoteIsSharing = false;
+        remoteCameraStream = null;
+        remoteScreenStream = null;
+        cameraMid = null;
+        screenMid = null;
+        hideRemoteVideo();
+        stopScreenShareLocal();
+        switchToNormalLayout();
+        if (pc) { pc.close(); pc = null; }
+        stopTimer();
+        break;
+
+      case 'offer':
+        handleOffer(msg);
+        break;
+
+      case 'answer':
+        if (pc && pc.signalingState !== 'closed' && pc.signalingState !== 'stable') {
+          pc.setRemoteDescription(new RTCSessionDescription(msg))
+            .catch(function(e) {
+              console.error('Answer error:', e);
+              if (pc) { pc.close(); pc = null; }
+              createPeerConnection();
+              addCameraTracks();
+              sendRenegotiationOffer();
+            });
+        }
+        break;
+
+      case 'ice-candidate':
+        if (msg.candidate && pc) pc.addIceCandidate(new RTCIceCandidate(msg)).catch(function(e) {});
+        break;
+
+      case 'screen-share-started':
+        // LECTURER dùng replaceTrack nên stream không đổi, chỉ nội dung thay đổi
+        // => Ghi đè remoteScreenStream = remoteCameraStream (đang phát màn hình)
+        remoteIsSharing = true;
+        if (remoteCameraStream) {
+          remoteScreenStream = remoteCameraStream;
+        }
+        updateDisplay();
+        showToast(msg.userName + ' đang chia sẻ màn hình');
+        break;
+
+      case 'screen-share-stopped':
+        // Track đã được replace lại về camera trong cùng stream
+        remoteIsSharing = false;
+        remoteScreenStream = null;
+        // remoteCameraStream vẫn trỏ đúng vì là cùng object
+        screenStreamId = null;
+        updateDisplay();
+        showToast(msg.userName + ' đã dừng chia sẻ');
+        break;
+
+      case 'mute-changed':
+      case 'video-changed':
+        break;
+    }
+  }
+
+  function setupLocalMedia() {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(function(stream) {
+        localStream = stream;
+        showLocalVideo(stream);
+        localMediaReady = true;
+        startTimer();
+        if (hasRemotePeer && USER_ROLE === 'LECTURER') initiateConnection();
+      })
+      .catch(function(err) {
+        console.error('getUserMedia:', err);
+        localMediaReady = true;
+        showToast('Không thể truy cập camera/mic');
+      });
+  }
+
+  function initiateConnection() {
+    createPeerConnection();
+    addCameraTracks();
+    sendRenegotiationOffer();
+  }
+
+  function handleOffer(msg) {
+    var isRenegotiation = (pc && pc.signalingState !== 'closed');
+    if (!isRenegotiation) {
+      createPeerConnection();
+    }
+    pc.setRemoteDescription(new RTCSessionDescription(msg))
+      .then(function() {
+        if (!isRenegotiation) addCameraTracks();
+        return pc.createAnswer();
+      })
+      .then(function(answer) { return pc.setLocalDescription(answer); })
+      .then(function() { sendSignal(pc.localDescription); })
+      .catch(function(e) {
+        console.error('Handle offer error:', e);
+        if (!isRenegotiation) {
+          if (pc) { pc.close(); pc = null; }
+          createPeerConnection();
+          addCameraTracks();
+          sendRenegotiationOffer();
+        }
+      });
+  }
+
+  function sendRenegotiationOffer() {
+    if (!pc || pc.signalingState !== 'stable') {
+      console.warn('Cannot send offer, signaling state:', pc ? pc.signalingState : 'no pc');
+      // Nếu đang pending screen share, đặt cờ để thử lại khi stable
+      return;
+    }
+    pc.createOffer()
+      .then(function(offer) { return pc.setLocalDescription(offer); })
+      .then(function() { sendSignal(pc.localDescription); })
+      .catch(function(e) {
+        // Không phá PC ở đây — chỉ log lỗi để tránh vòng lặp disconnect
+        console.error('Offer error:', e);
+      });
+  }
+
+  function createPeerConnection() {
+    if (pc) { pc.close(); }
+    remoteCameraStream = null;
+    remoteScreenStream = null;
+    cameraStreamId = null;
+    screenStreamId = null;
+    remoteIsSharing = false;
+    pc = new RTCPeerConnection(iceServers);
+
+    pc.onicecandidate = function(event) {
+      if (event.candidate) sendSignal({ type: 'ice-candidate', candidate: event.candidate.candidate, sdpMid: event.candidate.sdpMid, sdpMLineIndex: event.candidate.sdpMLineIndex });
+    };
+
+    pc.ontrack = function(event) {
+      var stream = event.streams[0];
+      if (!stream) return;
+
+      if (event.track.kind === 'audio') return; // bỏ qua audio track
+
+      // Phân biệt camera vs screen dựa trên stream.id (ổn định hơn mid-order)
+      if (!cameraStreamId) {
+        // Track video đầu tiên nhận => camera
+        cameraStreamId = stream.id;
+        remoteCameraStream = stream;
+      } else if (stream.id === cameraStreamId) {
+        remoteCameraStream = stream;
+      } else {
+        // Stream id khác => screen share
+        if (!screenStreamId) screenStreamId = stream.id;
+        remoteScreenStream = stream;
+        remoteIsSharing = true;
+        event.track.onended = function() {
+          remoteScreenStream = null;
+          remoteIsSharing = false;
+          screenStreamId = null;
+          updateDisplay();
+          showToast('Đối phương đã dừng chia sẻ màn hình');
+        };
+      }
+      updateDisplay();
+    };
+
+    pc.onnegotiationneeded = function() {
+      // LECTURER là người duy nhất tạo offer (kể cả khi renegotiate screen)
+      if (USER_ROLE === 'LECTURER' && hasRemotePeer && pc.signalingState === 'stable') {
+        sendRenegotiationOffer();
+      }
+    };
+
+    pc.onconnectionstatechange = function() {
+      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        remoteCameraStream = null;
+        remoteScreenStream = null;
+        hideRemoteVideo();
+        updateDisplay();
+      }
+    };
+  }
+
+  function addCameraTracks() {
+    if (!pc || !localStream) return;
+    localStream.getTracks().forEach(function(track) {
+      pc.addTrack(track, localStream);
+    });
+  }
+
+  /* ---- SCREEN SHARE (chỉ LECTURER) ---- */
+  function toggleScreenShare() {
+    if (USER_ROLE !== 'LECTURER') return; // bảo vệ thêm ở JS
+    if (isScreenSharing) { stopScreenShareLocal(); return; }
+
+    navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+      .then(function(stream) {
+        screenStream = stream;
+        var screenTrack = stream.getVideoTracks()[0];
+        screenTrack.onended = function() { stopScreenShareLocal(); };
+
+        if (!pc) { showToast('Chưa có kết nối'); return; }
+
+        // Tìm video sender hiện tại (camera)
+        var videoSender = pc.getSenders().find(function(s) {
+          return s.track && s.track.kind === 'video';
+        });
+
+        if (videoSender) {
+          // Dùng replaceTrack — KHÔNG cần renegotiation, không gây disconnect
+          videoSender.replaceTrack(screenTrack)
+            .then(function() {
+              isScreenSharing = true;
+              document.getElementById('btnScreen').classList.add('active');
+              var screenEl = document.getElementById('screenVideo');
+              screenEl.srcObject = stream;
+              screenEl.style.display = 'block';
+              document.getElementById('screenPlaceholder').style.display = 'none';
+              screenEl.play().catch(function() {});
+              updateDisplay();
+              sendSignal({ type: 'screen-share-started', userName: USER_NAME });
+              showToast('Đang chia sẻ màn hình');
+            })
+            .catch(function(e) { console.error('replaceTrack error:', e); stream.getTracks().forEach(function(t){t.stop();}); });
+        } else {
+          // Chưa có sender, addTrack và renegotiate
+          screenStreamId = stream.id;
+          pc.addTrack(screenTrack, stream);
+          isScreenSharing = true;
+          document.getElementById('btnScreen').classList.add('active');
+          var screenEl = document.getElementById('screenVideo');
+          screenEl.srcObject = stream;
+          screenEl.style.display = 'block';
+          document.getElementById('screenPlaceholder').style.display = 'none';
+          screenEl.play().catch(function() {});
+          updateDisplay();
+          sendSignal({ type: 'screen-share-started', userName: USER_NAME });
+          showToast('Đang chia sẻ màn hình');
+        }
+      })
+      .catch(function(err) { console.error('getDisplayMedia error:', err); });
+  }
+
+  function stopScreenShareLocal() {
+    if (!isScreenSharing) return;
+    isScreenSharing = false;
+
+    // Khôi phục lại camera track vào video sender
+    if (pc && localStream) {
+      var camTrack = localStream.getVideoTracks()[0];
+      var videoSender = pc.getSenders().find(function(s) {
+        return s.track && s.track.kind === 'video';
+      });
+      if (videoSender && camTrack) {
+        videoSender.replaceTrack(camTrack).catch(function(e) { console.error('restore cam error:', e); });
+      }
+    }
+
+    if (screenStream) {
+      screenStream.getTracks().forEach(function(t) { t.stop(); });
+      screenStream = null;
+    }
+
+    var btn = document.getElementById('btnScreen');
+    if (btn) btn.classList.remove('active');
+    document.getElementById('screenVideo').srcObject = null;
+    updateDisplay();
+    sendSignal({ type: 'screen-share-stopped', userName: USER_NAME });
+  }
+
+  /* ---- LAYOUT & DISPLAY ---- */
+  function updateDisplay() {
+    if (isScreenSharing || remoteIsSharing) {
+      switchToSharingLayout();
+    } else {
+      switchToNormalLayout();
+    }
+  }
+
+  function switchToSharingLayout() {
+    document.getElementById('normalLayout').classList.add('hidden-layout');
+    document.getElementById('sharingLayout').classList.remove('hidden-layout');
+
+    // Giải phóng localVideo để tránh conflict 2 element dùng cùng stream
+    var localVideoEl = document.getElementById('localVideo');
+    localVideoEl.srcObject = null;
+    localVideoEl.pause();
+
+    var screenEl = document.getElementById('screenVideo');
+    if (isScreenSharing && screenStream) {
+      // LECTURER tự xem màn hình của mình
+      screenEl.srcObject = screenStream;
+    } else if (remoteScreenStream) {
+      // STUDENT xem màn hình của LECTURER
+      screenEl.srcObject = remoteScreenStream;
+    }
+    if (screenEl.srcObject) {
+      screenEl.style.display = 'block';
+      document.getElementById('screenPlaceholder').style.display = 'none';
+      screenEl.play().catch(function() {});
+    } else {
+      screenEl.style.display = 'none';
+      document.getElementById('screenPlaceholder').style.display = 'flex';
+    }
+
+    // PiP local: dùng MediaStream mới chỉ chứa camera track để tránh conflict
+    var pipLocalVideo = document.getElementById('pipLocalVideo');
+    if (localStream && localStream.getVideoTracks().length > 0) {
+      var camPipStream = new MediaStream([localStream.getVideoTracks()[0]]);
+      pipLocalVideo.srcObject = camPipStream;
+      pipLocalVideo.style.display = isVideoOff ? 'none' : 'block';
+      document.getElementById('pipLocalPlaceholder').style.display = isVideoOff ? 'flex' : 'none';
+      if (!isVideoOff) pipLocalVideo.play().catch(function() {});
+    }
+
+    // PiP remote
+    if (isScreenSharing) {
+      // LECTURER side: pip remote = camera của STUDENT
+      if (remoteCameraStream) {
+        var pipRemoteVideo = document.getElementById('pipRemoteVideo');
+        pipRemoteVideo.srcObject = remoteCameraStream;
+        pipRemoteVideo.style.display = 'block';
+        document.getElementById('pipRemotePlaceholder').style.display = 'none';
+        pipRemoteVideo.play().catch(function() {});
+      } else {
+        document.getElementById('pipRemoteVideo').style.display = 'none';
+        document.getElementById('pipRemotePlaceholder').style.display = 'flex';
+      }
+    } else {
+      // STUDENT side: LECTURER dùng replaceTrack, không có camera ringêng
+      document.getElementById('pipRemoteVideo').style.display = 'none';
+      document.getElementById('pipRemotePlaceholder').style.display = 'flex';
+      document.getElementById('pipRemotePlaceholder').querySelector('span').textContent = 'Giảng viên';
+    }
+  }
+
+  function switchToNormalLayout() {
+    document.getElementById('sharingLayout').classList.add('hidden-layout');
+    document.getElementById('normalLayout').classList.remove('hidden-layout');
+
+    // Giải phóng pip để tránh conflict khi restore về localVideo
+    var pipLocalVideo = document.getElementById('pipLocalVideo');
+    pipLocalVideo.srcObject = null;
+    pipLocalVideo.pause();
+    var pipRemoteVideo = document.getElementById('pipRemoteVideo');
+    pipRemoteVideo.srcObject = null;
+    pipRemoteVideo.pause();
+
+    var screenEl = document.getElementById('screenVideo');
+    screenEl.srcObject = null;
+    screenEl.style.display = 'none';
+    document.getElementById('screenPlaceholder').style.display = 'flex';
+
+    if (localStream) showLocalVideo(localStream);
+
+    if (remoteCameraStream) {
+      var remoteVideo = document.getElementById('remoteVideo');
+      remoteVideo.srcObject = remoteCameraStream;
+      remoteVideo.style.display = 'block';
+      document.getElementById('remotePlaceholder').style.display = 'none';
+      remoteVideo.play().catch(function() {});
+    } else {
+      hideRemoteVideo();
+    }
+  }
+
+  function stopRemoteCamera() {
+    remoteScreenStream = null;
+    updateDisplay();
+  }
+
+  /* ---- VIDEO DISPLAY HELPERS ---- */
+  function showLocalVideo(stream) {
+    var localVideo = document.getElementById('localVideo');
+    localVideo.srcObject = stream;
+    localVideo.style.display = 'block';
+    document.getElementById('localPlaceholder').style.display = 'none';
+    localVideo.play();
+  }
+
+  function hideRemoteVideo() {
+    document.getElementById('remoteVideo').style.display = 'none';
+    document.getElementById('remotePlaceholder').style.display = 'flex';
+    document.getElementById('remotePlaceholder').querySelector('span').textContent = 'Đang chờ...';
+    document.getElementById('remoteLabel').textContent = 'Đối phương';
+    document.getElementById('pipRemoteVideo').style.display = 'none';
+    document.getElementById('pipRemotePlaceholder').style.display = 'flex';
+    document.getElementById('pipRemotePlaceholder').querySelector('span').textContent = 'Đang chờ...';
+    document.getElementById('pipRemoteLabel').textContent = 'Đối phương';
+  }
+
+  function setRemoteName(name) {
+    document.getElementById('remoteLabel').textContent = name;
+    document.getElementById('pipRemoteLabel').textContent = name;
+    document.getElementById('remotePlaceholder').querySelector('span').textContent = name;
+    document.getElementById('pipRemotePlaceholder').querySelector('span').textContent = name;
+  }
+
+  /* ---- CONTROLS ---- */
+  function toggleMute() {
+    if (!localStream) return;
+    isMuted = !isMuted;
+    localStream.getAudioTracks().forEach(function(t) { t.enabled = !isMuted; });
+    var btn = document.getElementById('btnMic');
+    btn.classList.toggle('active', isMuted);
+    btn.querySelector('i').className = isMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+    sendSignal({ type: 'mute-changed', muted: isMuted, userName: USER_NAME });
+  }
+
+  function toggleVideo() {
+    if (!localStream) return;
+    isVideoOff = !isVideoOff;
+    localStream.getVideoTracks().forEach(function(t) { t.enabled = !isVideoOff; });
+    var btn = document.getElementById('btnVideo');
+    btn.classList.toggle('active', isVideoOff);
+    btn.querySelector('i').className = isVideoOff ? 'fas fa-video-slash' : 'fas fa-video';
+    if (isVideoOff) {
+      document.getElementById('localVideo').style.display = 'none';
+      document.getElementById('localPlaceholder').style.display = 'flex';
+      document.getElementById('pipLocalVideo').style.display = 'none';
+      document.getElementById('pipLocalPlaceholder').style.display = 'flex';
+    } else {
+      document.getElementById('localVideo').style.display = 'block';
+      document.getElementById('localPlaceholder').style.display = 'none';
+      document.getElementById('pipLocalVideo').style.display = 'block';
+      document.getElementById('pipLocalPlaceholder').style.display = 'none';
+      document.getElementById('localVideo').play();
+      document.getElementById('pipLocalVideo').play();
+    }
+    sendSignal({ type: 'video-changed', videoOff: isVideoOff, userName: USER_NAME });
+  }
+
+  /* ---- HANG UP / CLOSE ---- */
+  function hangUp() {
+    cleanupMedia();
+    window.location.href = '/student/sessions';
+  }
+
+  function closeRoom() {
+    if (ws) { ws.close(); }
+    cleanupMedia();
+    fetch('/meeting/' + SESSION_ID + '/close', { method: 'POST' })
+      .then(function() { window.location.href = '/lecturer/confirmed-sessions'; })
+      .catch(function() { window.location.href = '/lecturer/confirmed-sessions'; });
+  }
+
+  function cleanupMedia() {
+    if (pc) { pc.close(); pc = null; }
+    if (localStream) { localStream.getTracks().forEach(function(t) { t.stop(); }); }
+    if (screenStream) { screenStream.getTracks().forEach(function(t) { t.stop(); }); }
+    stopTimer();
+  }
+
+  /* ---- TIMER ---- */
+  function startTimer() {
+    callStartTime = Date.now();
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+  function updateTimer() {
+    if (!callStartTime) return;
+    var elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+    document.getElementById('callTimer').textContent = String(Math.floor(elapsed / 60)).padStart(2, '0') + ':' + String(elapsed % 60).padStart(2, '0');
+  }
+  function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } callStartTime = null; }
+
+  function showToast(message) {
+    var toast = document.getElementById('statusToast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(function() { toast.classList.remove('show'); }, 3000);
+  }
+
+  window.onload = function() { connectWebSocket(); };
+  window.onbeforeunload = function() { if (ws) ws.close(); if (pc) pc.close(); };
+</script>
+</body>
+</html>

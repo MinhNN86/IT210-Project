@@ -38,6 +38,7 @@ public class SessionMapper {
                 .status(session.getStatus().name())
                 .note(session.getNote())
                 .canCancel(canCancel)
+                .meetingActive(session.getMeetingActive())
                 .build();
     }
 }

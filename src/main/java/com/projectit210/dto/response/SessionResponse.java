@@ -26,4 +26,5 @@ public class SessionResponse {
     private String status;
     private String note;
     private boolean canCancel; // true nếu có thể hủy (trước 24h)
+    private Boolean meetingActive;
 }

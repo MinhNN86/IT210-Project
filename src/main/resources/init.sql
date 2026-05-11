@@ -87,7 +87,9 @@ CREATE TABLE mentoring_sessions (
     status ENUM('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED')
         NOT NULL DEFAULT 'PENDING',
     note TEXT,
+    cancel_reason TEXT,
     cancelled_at TIMESTAMP NULL,
+    meeting_active BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_session_student
         FOREIGN KEY (student_id) REFERENCES users(id),

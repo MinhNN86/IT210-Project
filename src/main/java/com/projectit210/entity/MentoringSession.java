@@ -56,6 +56,10 @@ public class MentoringSession {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    @Column(name = "meeting_active", nullable = false)
+    @Builder.Default
+    private Boolean meetingActive = false;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
