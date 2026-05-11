@@ -327,7 +327,10 @@
   }
 
   function setupLocalMedia() {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+      audio: true
+    })
       .then(function(stream) {
         localStream = stream;
         showLocalVideo(stream);
@@ -427,7 +430,15 @@
   function addCameraTracks() {
     if (!pc || !localStream) return;
     localStream.getTracks().forEach(function(track) {
-      pc.addTrack(track, localStream);
+      var sender = pc.addTrack(track, localStream);
+      if (track.kind === 'video') {
+        try {
+          var params = sender.getParameters();
+          if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+          params.encodings[0].maxBitrate = 2500000; // 2.5 Mbps
+          sender.setParameters(params).catch(function(e){});
+        } catch(e) {}
+      }
     });
 
     // Tạo sẵn một kênh video bằng dummy track để truyền màn hình sau này (tránh renegotiation)
@@ -441,6 +452,15 @@
         var dummyStream = canvas.captureStream(1); // 1 fps
         dummyTrack = dummyStream.getVideoTracks()[0];
         var sender = pc.addTrack(dummyTrack, dummyStream);
+
+        // Tăng tối đa bitrate cho kênh màn hình ảo này
+        try {
+          var params = sender.getParameters();
+          if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+          params.encodings[0].maxBitrate = 5000000; // 5 Mbps (chất lượng cao)
+          sender.setParameters(params).catch(function(e){});
+        } catch(e) {}
+
         screenTransceiver = { sender: sender };
       } catch(e) {
         console.error("Canvas captureStream not supported", e);
@@ -453,11 +473,22 @@
     if (USER_ROLE !== 'LECTURER') return; // bảo vệ thêm ở JS
     if (isScreenSharing) { stopScreenShareLocal(); return; }
 
-    navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+    navigator.mediaDevices.getDisplayMedia({
+      video: {
+        width: { ideal: 1920, max: 1920 },
+        height: { ideal: 1080, max: 1080 },
+        frameRate: { ideal: 30, max: 60 }
+      },
+      audio: false
+    })
       .then(function(stream) {
         screenStream = stream;
         var screenTrack = stream.getVideoTracks()[0];
         screenTrack.onended = function() { stopScreenShareLocal(); };
+
+        if ('contentHint' in screenTrack) {
+          screenTrack.contentHint = 'detail'; // Ưu tiên độ nét chữ (text) thay vì độ mượt
+        }
 
         if (!pc) { showToast('Chưa có kết nối'); return; }
 
