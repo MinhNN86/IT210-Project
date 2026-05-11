@@ -1,0 +1,150 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layouts/main-layout :: layout('Lịch sử học thuật', ~{::content})}"
+>
+  <div th:fragment="content">
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
+        <i class="fas fa-history text-indigo-400"></i> Lịch sử Tư Vấn
+      </h1>
+    </div>
+
+    <div th:if="${history != null && !history.isEmpty()}" class="space-y-6">
+      <div class="glass-card overflow-hidden" th:each="h : ${history}">
+        <div
+          class="bg-indigo-500/10 border-b border-indigo-500/20 p-5 flex items-center gap-3"
+        >
+          <i class="fas fa-chalkboard-teacher text-xl text-indigo-400"></i>
+          <h2 class="text-lg font-semibold text-slate-100">
+            Buổi tư vấn ngày
+            <span th:text="${h.sessionDate}" class="text-indigo-300"></span>
+          </h2>
+        </div>
+
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+              <label
+                class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1"
+                >Giảng viên</label
+              >
+              <p
+                th:text="${h.lecturerName}"
+                class="text-indigo-400 font-medium"
+              ></p>
+            </div>
+            <div>
+              <label
+                class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1"
+                >Khoa</label
+              >
+              <p th:text="${h.departmentName}" class="text-slate-200"></p>
+            </div>
+            <div>
+              <label
+                class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1"
+                >Đánh giá năng lực</label
+              >
+              <span
+                class="badge-completed mt-1"
+                th:text="${h.performanceLevel}"
+              ></span>
+            </div>
+          </div>
+
+          <div
+            th:if="${h.evaluationComment}"
+            class="mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50"
+          >
+            <label
+              class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2"
+              >Nhận xét</label
+            >
+            <p th:text="${h.evaluationComment}" class="text-slate-300"></p>
+          </div>
+
+          <div
+            th:if="${h.recommendation}"
+            class="mb-6 bg-emerald-900/10 p-4 rounded-xl border border-emerald-500/20"
+          >
+            <label
+              class="block text-xs font-medium text-emerald-400/80 uppercase tracking-wider mb-2"
+              >Khuyến nghị</label
+            >
+            <p th:text="${h.recommendation}" class="text-emerald-100"></p>
+          </div>
+
+          <div
+            th:if="${h.borrowedEquipments != null && !h.borrowedEquipments.isEmpty()}"
+            class="mt-6 border-t border-indigo-500/10 pt-6"
+          >
+            <label
+              class="block text-sm font-semibold text-indigo-300 mb-4 flex items-center gap-2"
+            >
+              <i class="fas fa-tools"></i> Thiết bị đã mượn
+            </label>
+            <div
+              class="table-container rounded-xl border border-indigo-500/20 overflow-hidden"
+            >
+              <table class="table-custom bg-slate-900/30">
+                <thead class="bg-indigo-500/10">
+                  <tr>
+                    <th>Mã TB</th>
+                    <th>Tên thiết bị</th>
+                    <th>Số lượng</th>
+                    <th>Ngày cần trả</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="item : ${h.borrowedEquipments}">
+                    <td
+                      th:text="${item.equipmentCode}"
+                      class="font-mono text-xs text-indigo-300"
+                    ></td>
+                    <td
+                      th:text="${item.equipmentName}"
+                      class="text-slate-200 font-medium"
+                    ></td>
+                    <td th:text="${item.quantity}"></td>
+                    <td
+                      th:text="${item.expectedReturnDate}"
+                      class="text-slate-200"
+                    ></td>
+                    <td>
+                      <span th:if="${item.status == 'PENDING_DISPATCH'}"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                        Chờ cấp phát
+                      </span>
+                      <span th:if="${item.status == 'DISPATCHED'}"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        Đã xuất kho
+                      </span>
+                      <span th:if="${item.status == 'RETURNED'}"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Đã trả
+                      </span>
+                      <span th:if="${item.status == 'REJECTED'}"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-300 border border-red-500/30">
+                        Bị từ chối
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="glass-card py-16 text-center text-slate-400"
+      th:if="${history == null || history.isEmpty()}"
+    >
+      <i class="fas fa-book-open text-5xl opacity-30 mb-4"></i>
+      <p class="text-lg">Chưa có lịch sử học thuật</p>
+    </div>
+  </div>
+</html>

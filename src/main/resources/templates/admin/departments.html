@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main-layout :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>Quản lý Khoa/Ngành - Smart Academic</title>
+</head>
+<body>
+<section>
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-100 mb-2">Quản lý Khoa/Ngành</h1>
+            <p class="text-slate-400">Danh sách các khoa và ngành học trong hệ thống</p>
+        </div>
+        <a th:href="@{/admin/departments/new}" class="btn-primary">
+            <i class="fas fa-plus"></i> Thêm khoa mới
+        </a>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${successMessage}" class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-3">
+        <i class="fas fa-check-circle"></i>
+        <span th:text="${successMessage}"></span>
+    </div>
+    <div th:if="${errorMessage}" class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-3">
+        <i class="fas fa-exclamation-circle"></i>
+        <span th:text="${errorMessage}"></span>
+    </div>
+
+    <!-- Table Card -->
+    <div class="glass-card overflow-hidden">
+        <div class="table-container">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th class="w-16">ID</th>
+                        <th>Mã Khoa</th>
+                        <th>Tên Khoa/Ngành</th>
+                        <th class="w-32 text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="dept : ${departments}">
+                        <td th:text="${dept.id}">1</td>
+                        <td>
+                            <span class="px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full text-xs font-semibold" th:text="${dept.code}">CNTT</span>
+                        </td>
+                        <td class="font-medium text-slate-200" th:text="${dept.name}">Công nghệ thông tin</td>
+                        <td>
+                            <div class="flex items-center justify-center gap-2">
+                                <a th:href="@{/admin/departments/{id}/edit(id=${dept.id})}" 
+                                   class="p-2 text-slate-400 hover:text-cyan-400 transition-colors" title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form th:action="@{/admin/departments/{id}/delete(id=${dept.id})}" method="post" class="inline" 
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa Khoa/Ngành này?');">
+                                    <button type="submit" class="p-2 text-slate-400 hover:text-rose-400 transition-colors" title="Xóa">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(departments)}">
+                        <td colspan="4" class="text-center py-8 text-slate-400">
+                            <i class="fas fa-folder-open text-4xl mb-3 block opacity-50"></i>
+                            Chưa có khoa/ngành nào trong hệ thống
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/header :: header('Đăng nhập')}"></head>
+  <body
+    class="bg-app-bg text-slate-200 font-sans antialiased min-h-screen flex items-center justify-center relative overflow-hidden"
+  >
+    <!-- Background glow -->
+    <div
+      class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/20 blur-[120px] pointer-events-none"
+    ></div>
+    <div
+      class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none"
+    ></div>
+
+    <div class="glass-card w-full max-w-md p-8 md:p-10 relative z-10 mx-4">
+      <div class="text-center mb-8">
+        <h1
+          class="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-indigo-600 bg-clip-text text-transparent mb-2"
+        >
+          <i class="fas fa-graduation-cap mr-2 text-indigo-500"></i>Smart
+          Academic
+        </h1>
+        <p class="text-slate-400 text-sm">
+          Nền tảng Hỗ trợ Học thuật &amp; Quản lý Thiết bị
+        </p>
+      </div>
+
+      <div
+        th:if="${successMessage}"
+        class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-3 animate-[slideIn_0.3s_ease-out]"
+      >
+        <i class="fas fa-check-circle"></i>
+        <span th:text="${successMessage}"></span>
+      </div>
+      <div
+        th:if="${errorMessage}"
+        class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center gap-3 animate-[slideIn_0.3s_ease-out]"
+      >
+        <i class="fas fa-exclamation-circle"></i>
+        <span th:text="${errorMessage}"></span>
+      </div>
+
+      <form
+        th:action="@{/auth/login}"
+        th:object="${loginRequest}"
+        method="post"
+        class="space-y-5"
+      >
+        <div>
+          <label for="username" class="form-label">Tên đăng nhập</label>
+          <input
+            type="text"
+            id="username"
+            th:field="*{username}"
+            placeholder="Nhập tên đăng nhập"
+            required
+            class="form-input"
+          />
+        </div>
+        <div>
+          <label for="password" class="form-label">Mật khẩu</label>
+          <input
+            type="password"
+            id="password"
+            th:field="*{password}"
+            placeholder="Nhập mật khẩu"
+            required
+            class="form-input"
+          />
+        </div>
+
+        <button type="submit" class="btn-primary w-full mt-2">
+          <i class="fas fa-sign-in-alt"></i> Đăng nhập
+        </button>
+      </form>
+
+      <p class="text-center mt-8 text-slate-400 text-sm">
+        Chưa có tài khoản?
+        <a
+          th:href="@{/auth/register}"
+          class="text-indigo-400 font-medium hover:text-indigo-300 transition-colors"
+          >Đăng ký ngay</a
+        >
+      </p>
+    </div>
+  </body>
+</html>

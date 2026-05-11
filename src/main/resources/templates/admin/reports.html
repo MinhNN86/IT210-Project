@@ -1,0 +1,31 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layouts/main-layout :: layout('Báo cáo', ~{::content})}"
+>
+  <div th:fragment="content">
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
+        <i class="fas fa-chart-bar text-indigo-400"></i> Báo cáo &amp; Thống kê
+      </h1>
+    </div>
+
+    <div
+      class="glass-card py-20 flex flex-col items-center justify-center text-center"
+    >
+      <div
+        class="w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6 border border-indigo-500/20"
+      >
+        <i class="fas fa-chart-line text-4xl text-indigo-400"></i>
+      </div>
+      <h2 class="text-xl font-semibold text-slate-200 mb-2">
+        Tính năng đang được phát triển
+      </h2>
+      <p class="text-slate-400 max-w-md">
+        Các biểu đồ phân tích và thống kê chi tiết về mượn trả thiết bị, hiệu
+        suất giảng dạy sẽ được ra mắt trong các phiên bản cập nhật tiếp theo
+        (Phần mở rộng).
+      </p>
+    </div>
+  </div>
+</html>

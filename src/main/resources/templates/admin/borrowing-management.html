@@ -1,0 +1,298 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layouts/main-layout :: layout('Quản lý phiếu mượn', ~{::content})}"
+>
+  <div th:fragment="content">
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
+        <i class="fas fa-box text-indigo-400"></i> Quản lý Phiếu mượn Thiết bị
+      </h1>
+    </div>
+
+    <!-- Pending -->
+    <div
+      class="glass-card overflow-hidden mb-8"
+      th:if="${pendingBorrowings != null && !pendingBorrowings.isEmpty()}"
+    >
+      <div class="p-6 border-b border-amber-500/20 bg-amber-500/5">
+        <h2
+          class="text-lg font-semibold text-amber-400 flex items-center gap-2"
+        >
+          <i class="fas fa-exclamation-triangle"></i> Cần cấp phát
+        </h2>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <div
+          th:each="b : ${pendingBorrowings}"
+          class="border border-amber-500/20 bg-slate-900/50 rounded-xl p-5 shadow-inner"
+        >
+          <div class="flex flex-wrap justify-between items-start gap-4 mb-4">
+            <div>
+              <div class="text-lg text-slate-100 mb-1">
+                <span class="font-mono text-amber-500"
+                  >#<span th:text="${b.id}"></span
+                ></span>
+                <span class="text-slate-500 mx-2">|</span>
+                Sinh viên:
+                <span
+                  th:text="${b.studentName}"
+                  class="font-semibold text-indigo-300"
+                ></span>
+              </div>
+              <div class="text-sm text-slate-400 flex gap-4">
+                <span
+                  ><i class="far fa-calendar-alt mr-1"></i> Mượn:
+                  <span th:text="${b.borrowDate}" class="text-slate-300"></span
+                ></span>
+                <span
+                  ><i class="far fa-calendar-check mr-1"></i> Trả:
+                  <span
+                    th:text="${b.expectedReturnDate}"
+                    class="text-slate-300"
+                  ></span
+                ></span>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <form
+                th:action="@{/admin/borrowings/{id}/approve(id=${b.id})}"
+                method="post"
+                onsubmit="return confirm('Xác nhận xuất kho cho phiếu này?');"
+              >
+                <button
+                  type="submit"
+                  class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <i class="fas fa-check"></i> Xác nhận xuất kho
+                </button>
+              </form>
+              <form
+                th:action="@{/admin/borrowings/{id}/reject(id=${b.id})}"
+                method="post"
+                onsubmit="return confirm('Từ chối phiếu mượn này?');"
+              >
+                <button
+                  type="submit"
+                  class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <i class="fas fa-times"></i> Từ chối
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div
+            th:if="${b.details != null && !b.details.isEmpty()}"
+            class="mt-4 rounded-lg overflow-hidden border border-slate-700/50"
+          >
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-800/80 text-slate-400">
+                <tr>
+                  <th class="p-3 font-medium">Thiết bị</th>
+                  <th class="p-3 font-medium">Mã</th>
+                  <th class="p-3 font-medium text-center">Yêu cầu</th>
+                  <th class="p-3 font-medium text-center">Tồn kho hiện tại</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700/50">
+                <tr th:each="d : ${b.details}" class="bg-slate-900/30">
+                  <td
+                    th:text="${d.equipmentName}"
+                    class="p-3 text-slate-200"
+                  ></td>
+                  <td
+                    th:text="${d.equipmentCode}"
+                    class="p-3 font-mono text-xs text-indigo-300"
+                  ></td>
+                  <td
+                    th:text="${d.quantity}"
+                    class="p-3 text-center font-bold text-slate-200"
+                  ></td>
+                  <td
+                    class="p-3 text-center font-bold"
+                    th:text="${d.currentStock}"
+                    th:classappend="${d.currentStock < d.quantity} ? 'text-rose-400 bg-rose-500/10 rounded-md' : 'text-emerald-400'"
+                  ></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dispatched (Đang mượn - Cần thu hồi) -->
+    <div
+      class="glass-card overflow-hidden mb-8"
+      th:if="${dispatchedBorrowings != null && !dispatchedBorrowings.isEmpty()}"
+    >
+      <div class="p-6 border-b border-blue-500/20 bg-blue-500/5">
+        <h2
+          class="text-lg font-semibold text-blue-400 flex items-center gap-2"
+        >
+          <i class="fas fa-undo-alt"></i> Đang mượn - Cần thu hồi
+        </h2>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <div
+          th:each="b : ${dispatchedBorrowings}"
+          class="border border-blue-500/20 bg-slate-900/50 rounded-xl p-5 shadow-inner"
+        >
+          <div class="flex flex-wrap justify-between items-start gap-4 mb-4">
+            <div>
+              <div class="text-lg text-slate-100 mb-1">
+                <span class="font-mono text-blue-500"
+                  >#<span th:text="${b.id}"></span></span>
+                <span class="text-slate-500 mx-2">|</span>
+                Sinh viên:
+                <span
+                  th:text="${b.studentName}"
+                  class="font-semibold text-indigo-300"
+                ></span>
+              </div>
+              <div class="text-sm text-slate-400 flex gap-4">
+                <span
+                  ><i class="far fa-calendar-alt mr-1"></i> Mượn:
+                  <span th:text="${b.borrowDate}" class="text-slate-300"></span></span>
+                <span
+                  ><i class="far fa-calendar-check mr-1"></i> Trả dự kiến:
+                  <span
+                    th:text="${b.expectedReturnDate}"
+                    class="text-slate-300"
+                  ></span></span>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <form
+                th:action="@{/admin/borrowings/{id}/return(id=${b.id})}"
+                method="post"
+                onsubmit="return confirm('Xác nhận thu hồi thiết bị cho phiếu này?');"
+              >
+                <button
+                  type="submit"
+                  class="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <i class="fas fa-undo-alt"></i> Xác nhận trả
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div
+            th:if="${b.details != null && !b.details.isEmpty()}"
+            class="mt-4 rounded-lg overflow-hidden border border-slate-700/50"
+          >
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-800/80 text-slate-400">
+                <tr>
+                  <th class="p-3 font-medium">Thiết bị</th>
+                  <th class="p-3 font-medium">Mã</th>
+                  <th class="p-3 font-medium text-center">Số lượng mượn</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700/50">
+                <tr th:each="d : ${b.details}" class="bg-slate-900/30">
+                  <td
+                    th:text="${d.equipmentName}"
+                    class="p-3 text-slate-200"
+                  ></td>
+                  <td
+                    th:text="${d.equipmentCode}"
+                    class="p-3 font-mono text-xs text-indigo-300"
+                  ></td>
+                  <td
+                    th:text="${d.quantity}"
+                    class="p-3 text-center font-bold text-slate-200"
+                  ></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All -->
+    <div class="glass-card overflow-hidden">
+      <div class="p-6 border-b border-indigo-500/10">
+        <h2
+          class="text-lg font-semibold text-slate-100 flex items-center gap-2"
+        >
+          <i class="fas fa-list text-indigo-400"></i> Lịch sử phiếu mượn
+        </h2>
+      </div>
+
+      <div
+        class="table-container"
+        th:if="${borrowings != null && !borrowings.isEmpty()}"
+      >
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th class="w-16">ID</th>
+              <th>Sinh viên</th>
+              <th>Ngày mượn</th>
+              <th>Trả dự kiến</th>
+              <th>Trạng thái</th>
+              <th>Ngày trả thực tế</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="b : ${borrowings}">
+              <td
+                th:text="${'#' + b.id}"
+                class="text-indigo-300 font-mono text-xs"
+              ></td>
+              <td
+                th:text="${b.studentName}"
+                class="font-medium text-slate-200"
+              ></td>
+              <td th:text="${b.borrowDate}"></td>
+              <td th:text="${b.expectedReturnDate}"></td>
+              <td>
+                <span
+                  class="badge-pending"
+                  th:if="${b.status == 'PENDING_DISPATCH'}"
+                  >Chờ cấp phát</span
+                >
+                <span
+                  class="badge-dispatched"
+                  th:if="${b.status == 'DISPATCHED'}"
+                  >Đã xuất kho</span
+                >
+                <span class="badge-completed" th:if="${b.status == 'RETURNED'}"
+                  >Đã trả</span
+                >
+                <span class="badge-cancelled" th:if="${b.status == 'REJECTED'}"
+                  >Từ chối</span
+                >
+              </td>
+              <td>
+                <span
+                  th:if="${b.actualReturnDate != null}"
+                  th:text="${b.actualReturnDate}"
+                  class="text-emerald-400"
+                ></span>
+                <span
+                  th:if="${b.actualReturnDate == null}"
+                  class="text-slate-500"
+                  >—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        class="py-16 text-center text-slate-400"
+        th:if="${borrowings == null || borrowings.isEmpty()}"
+      >
+        <i class="fas fa-inbox text-5xl opacity-30 mb-4"></i>
+        <p class="text-lg">Chưa có phiếu mượn nào trong hệ thống</p>
+      </div>
+    </div>
+  </div>
+</html>

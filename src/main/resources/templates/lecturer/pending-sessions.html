@@ -1,0 +1,149 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layouts/main-layout :: layout('Chờ xác nhận', ~{::content})}"
+>
+  <div th:fragment="content">
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
+        <i class="fas fa-clock text-amber-400"></i> Sinh viên chờ xác nhận lịch hẹn
+      </h1>
+    </div>
+
+    <div class="glass-card overflow-hidden">
+      <div
+        class="table-container"
+        th:if="${sessions != null && !sessions.isEmpty()}"
+      >
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th class="w-16">ID</th>
+              <th>Ngày</th>
+              <th>Giờ</th>
+              <th>Sinh viên</th>
+              <th>Ghi chú</th>
+              <th class="text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="s : ${sessions}">
+              <td
+                th:text="${'#' + s.id}"
+                class="text-indigo-300 font-mono text-xs"
+              ></td>
+              <td
+                th:text="${s.sessionDate}"
+                class="font-medium text-slate-200"
+              ></td>
+              <td th:text="${s.startTime + ' - ' + s.endTime}"></td>
+              <td
+                th:text="${s.studentName}"
+                class="font-medium text-indigo-300"
+              ></td>
+              <td
+                th:text="${s.note}"
+                class="max-w-xs truncate text-slate-400"
+              ></td>
+              <td class="text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <form th:action="@{/lecturer/confirm-session/{id}(id=${s.id})}" method="post" class="inline-block">
+                    <button
+                      type="submit"
+                      class="inline-flex items-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <i class="fas fa-check"></i> Xác nhận
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    th:onclick="'openCancelModal(' + ${s.id} + ')'"
+                    class="inline-flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <i class="fas fa-times-circle"></i> Hủy hẹn
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        class="py-16 text-center text-slate-400"
+        th:if="${sessions == null || sessions.isEmpty()}"
+      >
+        <i class="fas fa-inbox text-5xl opacity-30 mb-4"></i>
+        <p class="text-lg">Không có sinh viên nào đang chờ xác nhận</p>
+      </div>
+    </div>
+
+    <div
+      id="cancelModal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm"
+    >
+      <div class="glass-card w-full max-w-md mx-4 p-6">
+        <h3
+          class="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2"
+        >
+          <i class="fas fa-exclamation-triangle text-rose-400"></i> Xác nhận hủy
+          buổi tư vấn
+        </h3>
+        <form id="cancelForm" method="post" action="">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-slate-300 mb-2"
+              >Lý do hủy <span class="text-rose-400">*</span></label
+            >
+            <textarea
+              id="cancelReason"
+              name="reason"
+              rows="4"
+              required
+              class="w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-4 py-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-colors resize-none"
+              placeholder="Nhập lý do hủy buổi tư vấn..."
+            ></textarea>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              onclick="closeCancelModal()"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 bg-slate-700/30 hover:bg-slate-700/50 border border-slate-600/30 transition-colors"
+            >
+              Đóng
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-rose-500/80 hover:bg-rose-500 border border-rose-500/50 transition-colors"
+            >
+              <i class="fas fa-times-circle mr-1"></i> Xác nhận hủy
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function openCancelModal(sessionId) {
+        const modal = document.getElementById("cancelModal");
+        const form = document.getElementById("cancelForm");
+        form.action = "/lecturer/cancel-session/" + sessionId;
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        document.getElementById("cancelReason").value = "";
+        document.getElementById("cancelReason").focus();
+      }
+
+      function closeCancelModal() {
+        const modal = document.getElementById("cancelModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      document
+        .getElementById("cancelModal")
+        .addEventListener("click", function (e) {
+          if (e.target === this) closeCancelModal();
+        });
+    </script>
+  </div>
+</html>

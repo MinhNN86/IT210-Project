@@ -1,0 +1,146 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layouts/main-layout :: layout('Tổng quan - Sinh viên', ~{::content})}"
+>
+  <div th:fragment="content">
+    <div
+      class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4"
+    >
+      <div>
+        <h1 class="text-2xl font-bold text-slate-100">
+          Xin chào,
+          <span th:text="${user.fullName}" class="text-indigo-400"
+            >Sinh viên</span
+          >!
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">
+          Chào mừng bạn đến với Smart Academic Platform
+        </p>
+      </div>
+      <a th:href="@{/student/book}" class="btn-primary shrink-0">
+        <i class="fas fa-calendar-plus"></i> Đặt lịch mới
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-2xl shrink-0 border border-indigo-500/20"
+        >
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${sessions != null ? sessions.size() : 0}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Tổng lịch hẹn</div>
+        </div>
+      </div>
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl shrink-0 border border-amber-500/20"
+        >
+          <i class="fas fa-clock"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${pendingCount}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Đang chờ</div>
+        </div>
+      </div>
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl shrink-0 border border-emerald-500/20"
+        >
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${completedCount}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Đã hoàn thành</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card overflow-hidden">
+      <div
+        class="flex items-center justify-between p-6 border-b border-indigo-500/10"
+      >
+        <h2
+          class="text-lg font-semibold text-slate-100 flex items-center gap-2"
+        >
+          <i class="fas fa-calendar-check text-indigo-400"></i> Lịch hẹn gần đây
+        </h2>
+        <a
+          th:href="@{/student/sessions}"
+          class="text-sm font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-4 py-2 rounded-lg transition-colors"
+          >Xem tất cả</a
+        >
+      </div>
+
+      <div
+        class="table-container"
+        th:if="${sessions != null && !sessions.isEmpty()}"
+      >
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Giờ</th>
+              <th>Giảng viên</th>
+              <th>Khoa</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="s, iter : ${sessions}" th:if="${iter.index < 5}">
+              <td
+                th:text="${s.sessionDate}"
+                class="font-medium text-slate-200"
+              ></td>
+              <td th:text="${s.startTime + ' - ' + s.endTime}"></td>
+              <td th:text="${s.lecturerName}"></td>
+              <td th:text="${s.departmentName}"></td>
+              <td>
+                <span class="badge-pending" th:if="${s.status == 'PENDING'}"
+                  ><i class="fas fa-clock mr-1"></i> Chờ xác nhận</span
+                >
+                <span class="badge-dispatched" th:if="${s.status == 'CONFIRMED'}"
+                  ><i class="fas fa-check mr-1"></i> Đã xác nhận</span
+                >
+                <span class="badge-completed" th:if="${s.status == 'COMPLETED'}"
+                  ><i class="fas fa-check-circle mr-1"></i> Hoàn thành</span
+                >
+                <span class="badge-cancelled" th:if="${s.status == 'CANCELLED'}"
+                  ><i class="fas fa-times-circle mr-1"></i> Đã hủy</span
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        class="py-16 text-center text-slate-400"
+        th:if="${sessions == null || sessions.isEmpty()}"
+      >
+        <i class="fas fa-calendar-times text-5xl opacity-30 mb-4"></i>
+        <p class="text-lg">
+          Chưa có lịch hẹn nào. Hãy đặt lịch tư vấn đầu tiên!
+        </p>
+      </div>
+    </div>
+  </div>
+</html>

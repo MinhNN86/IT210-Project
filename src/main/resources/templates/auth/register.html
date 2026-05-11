@@ -1,0 +1,119 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/header :: header('Đăng ký')}"></head>
+  <body
+    class="bg-app-bg text-slate-200 font-sans antialiased min-h-screen flex items-center justify-center relative py-12 px-4 overflow-y-auto"
+  >
+    <!-- Background glow -->
+    <div
+      class="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none"
+    ></div>
+
+    <div class="glass-card w-full max-w-2xl p-8 relative z-10">
+      <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold text-slate-100 mb-2">
+          <i class="fas fa-user-plus mr-2 text-indigo-500"></i>Đăng ký tài khoản
+          SINH VIÊN
+        </h1>
+        <p class="text-slate-400 text-sm">
+          Tạo tài khoản mới để sử dụng hệ thống
+        </p>
+      </div>
+
+      <div
+        th:if="${errorMessage}"
+        class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center gap-3"
+      >
+        <i class="fas fa-exclamation-circle"></i>
+        <span th:text="${errorMessage}"></span>
+      </div>
+
+      <form
+        th:action="@{/auth/register}"
+        th:object="${registerRequest}"
+        method="post"
+        class="space-y-5"
+      >
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label for="username" class="form-label">Tên đăng nhập *</label>
+            <input
+              type="text"
+              id="username"
+              th:field="*{username}"
+              placeholder="vd: nguyenvana"
+              required
+              class="form-input"
+            />
+          </div>
+          <div>
+            <label for="email" class="form-label">Email *</label>
+            <input
+              type="email"
+              id="email"
+              th:field="*{email}"
+              placeholder="vd: email@uni.edu.vn"
+              required
+              class="form-input"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="fullName" class="form-label">Họ và tên *</label>
+          <input
+            type="text"
+            id="fullName"
+            th:field="*{fullName}"
+            placeholder="Nguyễn Văn A"
+            required
+            class="form-input"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label for="password" class="form-label">Mật khẩu *</label>
+            <input
+              type="password"
+              id="password"
+              th:field="*{password}"
+              placeholder="Tối thiểu 6 ký tự"
+              required
+              class="form-input"
+            />
+          </div>
+          <div>
+            <label for="confirmPassword" class="form-label"
+              >Xác nhận mật khẩu *</label
+            >
+            <input
+              type="password"
+              id="confirmPassword"
+              th:field="*{confirmPassword}"
+              placeholder="Nhập lại mật khẩu"
+              required
+              class="form-input"
+            />
+          </div>
+        </div>
+
+        <!-- Role is fixed as STUDENT by the controller -->
+        <input type="hidden" th:field="*{role}" value="STUDENT" />
+
+        <button type="submit" class="btn-primary w-full mt-4">
+          <i class="fas fa-user-plus"></i> Đăng ký
+        </button>
+      </form>
+
+      <p class="text-center mt-6 text-slate-400 text-sm">
+        Đã có tài khoản?
+        <a
+          th:href="@{/auth/login}"
+          class="text-indigo-400 font-medium hover:text-indigo-300 transition-colors"
+          >Đăng nhập</a
+        >
+      </p>
+    </div>
+  </body>
+</html>

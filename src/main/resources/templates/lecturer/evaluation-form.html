@@ -1,0 +1,161 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layouts/main-layout :: layout('Đánh giá sinh viên', ~{::content})}"
+>
+  <div th:fragment="content">
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
+        <i class="fas fa-edit text-indigo-400"></i> Đánh giá &amp; Chỉ định
+        thiết bị
+      </h1>
+    </div>
+
+    <div class="glass-card max-w-4xl p-8">
+      <div
+        class="mb-8 p-6 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-2"
+      >
+        <p class="text-slate-300">
+          <strong class="text-slate-400 font-medium">Sinh viên:</strong>
+          <span
+            th:text="${mentoringSession.student.fullName}"
+            class="text-indigo-300 font-semibold text-lg ml-2"
+          ></span>
+        </p>
+        <p class="text-slate-300 flex items-center gap-4">
+          <span
+            ><strong class="text-slate-400 font-medium">Ngày:</strong>
+            <span th:text="${mentoringSession.sessionDate}" class="ml-2"></span
+          ></span>
+          <span class="text-indigo-500/50">|</span>
+          <span
+            ><strong class="text-slate-400 font-medium">Giờ:</strong>
+            <span
+              th:text="${mentoringSession.startTime + ' - ' + mentoringSession.endTime}"
+              class="ml-2"
+            ></span
+          ></span>
+        </p>
+        <p th:if="${mentoringSession.note}" class="text-slate-300">
+          <strong class="text-slate-400 font-medium">Ghi chú:</strong>
+          <span th:text="${mentoringSession.note}" class="ml-2 italic opacity-80"></span>
+        </p>
+      </div>
+
+      <form th:action="@{/lecturer/evaluate}" method="post" class="space-y-6">
+        <input
+          type="hidden"
+          name="mentoringSessionId"
+          th:value="${mentoringSession.id}"
+        />
+
+        <div class="grid grid-cols-1 gap-6">
+          <div>
+            <label for="performanceLevel" class="form-label"
+              >Đánh giá năng lực *</label
+            >
+            <select
+              id="performanceLevel"
+              name="performanceLevel"
+              required
+              class="form-input [&>option]:bg-slate-800"
+            >
+              <option value="">-- Chọn --</option>
+              <option value="Xuất sắc">Xuất sắc</option>
+              <option value="Giỏi">Giỏi</option>
+              <option value="Khá">Khá</option>
+              <option value="Trung bình">Trung bình</option>
+              <option value="Yếu">Yếu</option>
+            </select>
+          </div>
+          <div>
+            <label for="evaluationComment" class="form-label">Nhận xét</label>
+            <textarea
+              id="evaluationComment"
+              name="evaluationComment"
+              rows="3"
+              placeholder="Nhận xét về buổi tư vấn..."
+              class="form-input resize-none"
+            ></textarea>
+          </div>
+          <div>
+            <label for="recommendation" class="form-label">Khuyến nghị</label>
+            <textarea
+              id="recommendation"
+              name="recommendation"
+              rows="2"
+              placeholder="Hướng phát triển, tài liệu tham khảo..."
+              class="form-input resize-none"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="mt-10 mb-6">
+          <h2
+            class="text-xl font-bold text-slate-100 flex items-center gap-2 border-b border-indigo-500/20 pb-4"
+          >
+            <i class="fas fa-tools text-indigo-400"></i> Chỉ định thiết bị/tài
+            liệu mượn
+          </h2>
+        </div>
+
+        <div id="equipment-list" class="space-y-4 mb-6">
+          <div
+            class="flex items-end gap-4 p-4 bg-slate-900/40 rounded-xl border border-slate-700/50"
+            th:each="item, iter : ${equipments}"
+          >
+            <div class="flex-1">
+              <label class="form-label mb-0" th:text="${item.name}"></label>
+              <span
+                class="text-xs text-emerald-400 block mt-1"
+                th:text="'(Tồn kho: ' + ${item.quantityInStock} + ')'"
+              ></span>
+              <input
+                type="hidden"
+                th:name="${'equipmentItems[' + iter.index + '].equipmentId'}"
+                th:value="${item.id}"
+              />
+            </div>
+            <div class="w-32">
+              <label class="block text-xs font-medium text-slate-400 mb-1"
+                >Số lượng</label
+              >
+              <input
+                type="number"
+                th:name="${'equipmentItems[' + iter.index + '].quantity'}"
+                value="0"
+                min="0"
+                th:max="${item.quantityInStock}"
+                class="form-input py-2 text-center"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="w-1/2">
+          <label for="expectedReturnDate" class="form-label"
+            >Ngày trả dự kiến</label
+          >
+          <input
+            type="date"
+            id="expectedReturnDate"
+            name="expectedReturnDate"
+            class="form-input [&::-webkit-calendar-picker-indicator]:filter-invert"
+          />
+        </div>
+
+        <div class="pt-6 border-t border-indigo-500/10 flex gap-4">
+          <button type="submit" class="btn-success">
+            <i class="fas fa-check"></i> Hoàn tất đánh giá
+          </button>
+          <a
+            th:href="@{/lecturer/pending-sessions}"
+            class="btn-warning bg-slate-700 hover:bg-slate-600 hover:shadow-none text-slate-200"
+          >
+            Hủy & Quay lại
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</html>

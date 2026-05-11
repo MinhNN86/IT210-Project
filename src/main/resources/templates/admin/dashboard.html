@@ -1,0 +1,587 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layouts/main-layout :: layout('Tổng quan - Admin', ~{::content})}"
+>
+  <div th:fragment="content">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-slate-100">
+        Bảng điều khiển Quản trị
+      </h1>
+      <p class="text-slate-400 text-sm mt-1">
+        Chào mừng,
+        <span th:text="${user.fullName}" class="text-indigo-400">Admin</span>
+      </p>
+    </div>
+
+    <!-- ===================== STATISTICS CARDS ===================== -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Tổng thiết bị -->
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-2xl shrink-0 border border-indigo-500/20"
+        >
+          <i class="fas fa-tools"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${totalEquipments}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Tổng thiết bị</div>
+        </div>
+      </div>
+
+      <!-- Thiết bị đang được mượn -->
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-2xl shrink-0 border border-blue-500/20"
+        >
+          <i class="fas fa-laptop"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${borrowedEquipmentQuantity}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Thiết bị đang mượn</div>
+        </div>
+      </div>
+
+      <!-- Tổng sinh viên -->
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl shrink-0 border border-emerald-500/20"
+        >
+          <i class="fas fa-user-graduate"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${totalStudents}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Sinh viên</div>
+        </div>
+      </div>
+
+      <!-- Tổng giảng viên -->
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl shrink-0 border border-amber-500/20"
+        >
+          <i class="fas fa-chalkboard-teacher"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${totalLecturers}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Giảng viên</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SECONDARY STAT CARDS ===================== -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Phiếu mượn đang xử lý -->
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl shrink-0 border border-amber-500/20"
+        >
+          <i class="fas fa-box"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${pendingBorrowings != null ? pendingBorrowings.size() : 0}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Phiếu chờ duyệt</div>
+        </div>
+      </div>
+
+      <!-- Phiếu đang mượn (DISPATCHED) -->
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl shrink-0 border border-cyan-500/20"
+        >
+          <i class="fas fa-hand-holding"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${borrowedRecordCount}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Phiếu đang mượn</div>
+        </div>
+      </div>
+
+      <!-- Buổi tư vấn -->
+      <div class="glass-card flex items-center p-6 gap-5">
+        <div
+          class="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-2xl shrink-0 border border-purple-500/20"
+        >
+          <i class="fas fa-calendar-check"></i>
+        </div>
+        <div>
+          <div
+            class="text-3xl font-bold text-slate-100"
+            th:text="${totalActiveSessions}"
+          >
+            0
+          </div>
+          <div class="text-slate-400 text-sm font-medium">Buổi tư vấn</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== CHARTS SECTION ===================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Top 5 Giảng viên có lượt tư vấn nhiều nhất (Bar Chart) -->
+      <div class="glass-card p-6">
+        <h2 class="text-lg font-semibold text-cyan-400 flex items-center gap-2 mb-6">
+          <i class="fas fa-trophy"></i> Top 5 Giảng viên - Lượt tư vấn nhiều nhất
+        </h2>
+        <div class="relative" style="height: 350px;">
+          <canvas id="topLecturersChart"></canvas>
+        </div>
+        <!-- Table for detail -->
+        <div class="mt-6" th:if="${top5Lecturers != null && !top5Lecturers.isEmpty()}">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th class="w-12">#</th>
+                <th>Giảng viên</th>
+                <th class="text-right">Lượt tư vấn</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="lecturer, iterStat : ${top5Lecturers}">
+                <td>
+                  <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold"
+                        th:classappend="${iterStat.index == 0} ? 'bg-amber-500/20 text-amber-400' : (${iterStat.index == 1} ? 'bg-slate-400/20 text-slate-300' : (${iterStat.index == 2} ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-600/20 text-slate-500'))"
+                        th:text="${iterStat.index + 1}">1</span>
+                </td>
+                <td class="font-medium text-slate-200" th:text="${lecturer[0]}">Tên GV</td>
+                <td class="text-right">
+                  <span class="text-cyan-400 font-bold text-lg" th:text="${lecturer[1]}">0</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div th:if="${top5Lecturers == null || top5Lecturers.isEmpty()}" class="text-center text-slate-500 py-8">
+          <i class="fas fa-chart-bar text-4xl mb-3 block opacity-30"></i>
+          <p>Chưa có dữ liệu tư vấn</p>
+        </div>
+      </div>
+
+      <!-- Thống kê trạng thái phiếu mượn (Doughnut Chart) -->
+      <div class="glass-card p-6">
+        <h2 class="text-lg font-semibold text-cyan-400 flex items-center gap-2 mb-6">
+          <i class="fas fa-chart-pie"></i> Thống kê Phiếu mượn theo trạng thái
+        </h2>
+        <div class="relative flex items-center justify-center" style="height: 350px;">
+          <canvas id="borrowingStatusChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SECOND ROW CHARTS ===================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Thống kê Session theo trạng thái (Doughnut Chart) -->
+      <div class="glass-card p-6">
+        <h2 class="text-lg font-semibold text-cyan-400 flex items-center gap-2 mb-6">
+          <i class="fas fa-calendar-alt"></i> Thống kê Buổi tư vấn theo trạng thái
+        </h2>
+        <div class="relative flex items-center justify-center" style="height: 350px;">
+          <canvas id="sessionStatusChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Thống kê thiết bị đang mượn theo loại (Bar Chart) -->
+      <div class="glass-card p-6">
+        <h2 class="text-lg font-semibold text-cyan-400 flex items-center gap-2 mb-6">
+          <i class="fas fa-laptop-code"></i> Thiết bị đang mượn theo loại
+        </h2>
+        <div class="relative" style="height: 350px;">
+          <canvas id="borrowedEquipmentChart"></canvas>
+        </div>
+        <div th:if="${borrowedByEquipmentStats == null || borrowedByEquipmentStats.isEmpty()}" class="text-center text-slate-500 py-8">
+          <i class="fas fa-box-open text-4xl mb-3 block opacity-30"></i>
+          <p>Chưa có thiết bị nào đang được mượn</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== PENDING BORROWINGS TABLE ===================== -->
+    <div
+      class="glass-card overflow-hidden"
+      th:if="${pendingBorrowings != null && !pendingBorrowings.isEmpty()}"
+    >
+      <div
+        class="flex items-center justify-between p-6 border-b border-indigo-500/10"
+      >
+        <h2
+          class="text-lg font-semibold text-amber-400 flex items-center gap-2"
+        >
+          <i class="fas fa-exclamation-triangle"></i> Phiếu mượn cần xử lý
+        </h2>
+        <a
+          th:href="@{/admin/borrowings}"
+          class="text-sm font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-4 py-2 rounded-lg transition-colors"
+          >Xem tất cả</a
+        >
+      </div>
+
+      <div class="table-container">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th class="w-16">ID</th>
+              <th>Sinh viên</th>
+              <th>Ngày mượn</th>
+              <th>Trạng thái</th>
+              <th class="text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="b, i : ${pendingBorrowings}" th:if="${i.index < 5}">
+              <td
+                th:text="${'#' + b.id}"
+                class="text-indigo-300 font-mono text-xs"
+              ></td>
+              <td
+                th:text="${b.studentName}"
+                class="font-medium text-slate-200"
+              ></td>
+              <td th:text="${b.borrowDate}"></td>
+              <td><span class="badge-pending">Chờ cấp phát</span></td>
+              <td class="text-right">
+                <a
+                  th:href="@{/admin/borrowings}"
+                  class="inline-flex items-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                >
+                  Xử lý <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================== CHART.JS INITIALIZATION ===================== -->
+    <script th:inline="javascript">
+      document.addEventListener('DOMContentLoaded', function() {
+        // Chart.js global defaults for dark theme
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = 'rgba(6, 182, 212, 0.1)';
+        Chart.defaults.font.family = 'Inter, sans-serif';
+
+        // ========== TOP 5 LECTURERS BAR CHART ==========
+        // Dữ liệu lấy từ DB bằng: JOIN + GROUP BY + HAVING + ORDER BY + LIMIT
+        const topLecturersData = /*[[${top5Lecturers}]]*/ [];
+        if (topLecturersData && topLecturersData.length > 0) {
+          const lecturerNames = topLecturersData.map(item => item[0]);
+          const sessionCounts = topLecturersData.map(item => item[1]);
+
+          const gradientColors = [
+            'rgba(245, 158, 11, 0.8)',   // amber-500
+            'rgba(6, 182, 212, 0.8)',     // cyan-500
+            'rgba(249, 115, 22, 0.8)',    // orange-500
+            'rgba(139, 92, 246, 0.8)',    // violet-500
+            'rgba(16, 185, 129, 0.8)',    // emerald-500
+          ];
+
+          const borderColors = [
+            'rgba(245, 158, 11, 1)',
+            'rgba(6, 182, 212, 1)',
+            'rgba(249, 115, 22, 1)',
+            'rgba(139, 92, 246, 1)',
+            'rgba(16, 185, 129, 1)',
+          ];
+
+          new Chart(document.getElementById('topLecturersChart'), {
+            type: 'bar',
+            data: {
+              labels: lecturerNames,
+              datasets: [{
+                label: 'Lượt tư vấn',
+                data: sessionCounts,
+                backgroundColor: gradientColors.slice(0, lecturerNames.length),
+                borderColor: borderColors.slice(0, lecturerNames.length),
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              indexAxis: 'y',
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  borderColor: 'rgba(6, 182, 212, 0.3)',
+                  borderWidth: 1,
+                  titleColor: '#e2e8f0',
+                  bodyColor: '#94a3b8',
+                  padding: 12,
+                  cornerRadius: 8,
+                  callbacks: {
+                    label: function(context) {
+                      return context.parsed.x + ' lượt tư vấn';
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1,
+                    color: '#64748b',
+                  },
+                  grid: {
+                    color: 'rgba(6, 182, 212, 0.08)',
+                  }
+                },
+                y: {
+                  ticks: {
+                    color: '#cbd5e1',
+                    font: { size: 13, weight: '500' }
+                  },
+                  grid: { display: false }
+                }
+              }
+            }
+          });
+        }
+
+        // ========== BORROWING STATUS DOUGHNUT CHART ==========
+        // Dữ liệu lấy từ DB bằng: GROUP BY status
+        const borrowingStats = /*[[${borrowingStatsByStatus}]]*/ {};
+        const borrowingLabels = {
+          'PENDING_DISPATCH': 'Chờ cấp phát',
+          'DISPATCHED': 'Đã xuất kho',
+          'RETURNED': 'Đã trả',
+          'REJECTED': 'Từ chối'
+        };
+        const borrowingColors = {
+          'PENDING_DISPATCH': 'rgba(245, 158, 11, 0.8)',
+          'DISPATCHED': 'rgba(59, 130, 246, 0.8)',
+          'RETURNED': 'rgba(16, 185, 129, 0.8)',
+          'REJECTED': 'rgba(244, 63, 94, 0.8)'
+        };
+        const borrowingBorderColors = {
+          'PENDING_DISPATCH': 'rgba(245, 158, 11, 1)',
+          'DISPATCHED': 'rgba(59, 130, 246, 1)',
+          'RETURNED': 'rgba(16, 185, 129, 1)',
+          'REJECTED': 'rgba(244, 63, 94, 1)'
+        };
+
+        if (borrowingStats && Object.keys(borrowingStats).length > 0) {
+          new Chart(document.getElementById('borrowingStatusChart'), {
+            type: 'doughnut',
+            data: {
+              labels: Object.keys(borrowingStats).map(k => borrowingLabels[k] || k),
+              datasets: [{
+                data: Object.values(borrowingStats),
+                backgroundColor: Object.keys(borrowingStats).map(k => borrowingColors[k] || 'rgba(148, 163, 184, 0.8)'),
+                borderColor: Object.keys(borrowingStats).map(k => borrowingBorderColors[k] || 'rgba(148, 163, 184, 1)'),
+                borderWidth: 2,
+                hoverOffset: 8,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '60%',
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    color: '#cbd5e1',
+                    padding: 16,
+                    usePointStyle: true,
+                    pointStyleWidth: 12,
+                    font: { size: 13 }
+                  }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  borderColor: 'rgba(6, 182, 212, 0.3)',
+                  borderWidth: 1,
+                  titleColor: '#e2e8f0',
+                  bodyColor: '#94a3b8',
+                  padding: 12,
+                  cornerRadius: 8,
+                  callbacks: {
+                    label: function(context) {
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const pct = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                      return context.label + ': ' + context.parsed + ' (' + pct + '%)';
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+
+        // ========== SESSION STATUS DOUGHNUT CHART ==========
+        // Dữ liệu lấy từ DB bằng: GROUP BY status
+        const sessionStats = /*[[${sessionStatsByStatus}]]*/ {};
+        const sessionLabels = {
+          'PENDING': 'Chờ xác nhận',
+          'CONFIRMED': 'Đã xác nhận',
+          'COMPLETED': 'Đã hoàn thành',
+          'CANCELLED': 'Đã hủy'
+        };
+        const sessionColors = {
+          'PENDING': 'rgba(245, 158, 11, 0.8)',
+          'CONFIRMED': 'rgba(59, 130, 246, 0.8)',
+          'COMPLETED': 'rgba(16, 185, 129, 0.8)',
+          'CANCELLED': 'rgba(244, 63, 94, 0.8)'
+        };
+        const sessionBorderColors = {
+          'PENDING': 'rgba(245, 158, 11, 1)',
+          'CONFIRMED': 'rgba(59, 130, 246, 1)',
+          'COMPLETED': 'rgba(16, 185, 129, 1)',
+          'CANCELLED': 'rgba(244, 63, 94, 1)'
+        };
+
+        if (sessionStats && Object.keys(sessionStats).length > 0) {
+          new Chart(document.getElementById('sessionStatusChart'), {
+            type: 'doughnut',
+            data: {
+              labels: Object.keys(sessionStats).map(k => sessionLabels[k] || k),
+              datasets: [{
+                data: Object.values(sessionStats),
+                backgroundColor: Object.keys(sessionStats).map(k => sessionColors[k] || 'rgba(148, 163, 184, 0.8)'),
+                borderColor: Object.keys(sessionStats).map(k => sessionBorderColors[k] || 'rgba(148, 163, 184, 1)'),
+                borderWidth: 2,
+                hoverOffset: 8,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '60%',
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    color: '#cbd5e1',
+                    padding: 16,
+                    usePointStyle: true,
+                    pointStyleWidth: 12,
+                    font: { size: 13 }
+                  }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  borderColor: 'rgba(6, 182, 212, 0.3)',
+                  borderWidth: 1,
+                  titleColor: '#e2e8f0',
+                  bodyColor: '#94a3b8',
+                  padding: 12,
+                  cornerRadius: 8,
+                  callbacks: {
+                    label: function(context) {
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const pct = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                      return context.label + ': ' + context.parsed + ' (' + pct + '%)';
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+
+        // ========== BORROWED EQUIPMENT BY TYPE BAR CHART ==========
+        // Dữ liệu lấy từ DB bằng: JOIN + GROUP BY + SUM
+        const borrowedByEquipment = /*[[${borrowedByEquipmentStats}]]*/ [];
+        if (borrowedByEquipment && borrowedByEquipment.length > 0) {
+          const equipNames = borrowedByEquipment.map(item => item[0]);
+          const equipQuantities = borrowedByEquipment.map(item => item[1]);
+
+          new Chart(document.getElementById('borrowedEquipmentChart'), {
+            type: 'bar',
+            data: {
+              labels: equipNames,
+              datasets: [{
+                label: 'Số lượng đang mượn',
+                data: equipQuantities,
+                backgroundColor: 'rgba(6, 182, 212, 0.6)',
+                borderColor: 'rgba(6, 182, 212, 1)',
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  borderColor: 'rgba(6, 182, 212, 0.3)',
+                  borderWidth: 1,
+                  titleColor: '#e2e8f0',
+                  bodyColor: '#94a3b8',
+                  padding: 12,
+                  cornerRadius: 8,
+                  callbacks: {
+                    label: function(context) {
+                      return 'Đang mượn: ' + context.parsed.y + ' thiết bị';
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1,
+                    color: '#64748b',
+                  },
+                  grid: {
+                    color: 'rgba(6, 182, 212, 0.08)',
+                  }
+                },
+                x: {
+                  ticks: {
+                    color: '#cbd5e1',
+                    font: { size: 12 },
+                    maxRotation: 45,
+                    minRotation: 0
+                  },
+                  grid: { display: false }
+                }
+              }
+            }
+          });
+        }
+      });
+    </script>
+  </div>
+</html>

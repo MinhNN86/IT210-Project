@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main-layout :: layout(~{::title}, ~{::section})}">
+<head>
+    <title th:text="${isEdit ? 'Chỉnh sửa Khoa/Ngành - Smart Academic' : 'Thêm Khoa mới - Smart Academic'}"></title>
+</head>
+<body>
+<section>
+    <!-- Header & Back Button -->
+    <div class="mb-8">
+        <a th:href="@{/admin/departments}" class="inline-flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors mb-4">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+        <h1 class="text-3xl font-bold text-slate-100" th:text="${isEdit ? 'Chỉnh sửa Khoa/Ngành' : 'Thêm Khoa mới'}"></h1>
+    </div>
+
+    <div class="max-w-2xl">
+        <!-- Form Card -->
+        <div class="glass-card p-8">
+            <div th:if="${errorMessage}" class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-3">
+                <i class="fas fa-exclamation-circle"></i>
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <form th:action="${isEdit ? '/admin/departments/' + departmentId : '/admin/departments'}" 
+                  th:object="${departmentRequest}" method="post" class="space-y-6">
+                
+                <div>
+                    <label class="form-label">Mã Khoa/Ngành <span class="text-rose-500">*</span></label>
+                    <input type="text" th:field="*{code}" class="form-input" placeholder="VD: CNTT, DTVT..." required>
+                    <p th:if="${#fields.hasErrors('code')}" th:errors="*{code}" class="mt-1 text-sm text-rose-400"></p>
+                </div>
+                
+                <div>
+                    <label class="form-label">Tên Khoa/Ngành <span class="text-rose-500">*</span></label>
+                    <input type="text" th:field="*{name}" class="form-input" placeholder="VD: Công nghệ thông tin..." required>
+                    <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="mt-1 text-sm text-rose-400"></p>
+                </div>
+
+                <div class="pt-4 flex gap-4">
+                    <button type="submit" class="btn-primary flex-1">
+                        <i th:class="${isEdit ? 'fas fa-save' : 'fas fa-plus'}"></i>
+                        <span th:text="${isEdit ? 'Cập nhật Khoa' : 'Thêm Khoa mới'}"></span>
+                    </button>
+                    <a th:href="@{/admin/departments}" class="px-6 py-2.5 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors flex items-center justify-center">
+                        Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+</body>
+</html>

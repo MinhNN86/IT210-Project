@@ -1,0 +1,100 @@
+<!doctype html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layouts/main-layout :: layout('Lịch hẹn của tôi', ~{::content})}"
+>
+  <div th:fragment="content">
+    <div
+      class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4"
+    >
+      <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
+        <i class="fas fa-calendar-check text-indigo-400"></i> Lịch hẹn của tôi
+      </h1>
+      <a th:href="@{/student/book}" class="btn-primary shrink-0 py-2 text-sm">
+        <i class="fas fa-plus"></i> Đặt lịch mới
+      </a>
+    </div>
+
+    <div class="glass-card overflow-hidden">
+      <div
+        class="table-container"
+        th:if="${sessions != null && !sessions.isEmpty()}"
+      >
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th class="w-16">ID</th>
+              <th>Ngày</th>
+              <th>Giờ</th>
+              <th>Giảng viên</th>
+              <th>Khoa</th>
+              <th>Trạng thái</th>
+              <th class="text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="s : ${sessions}">
+              <td
+                th:text="${'#' + s.id}"
+                class="text-indigo-300 font-mono text-xs"
+              ></td>
+              <td
+                th:text="${s.sessionDate}"
+                class="font-medium text-slate-200"
+              ></td>
+              <td th:text="${s.startTime + ' - ' + s.endTime}"></td>
+              <td th:text="${s.lecturerName}"></td>
+              <td th:text="${s.departmentName}"></td>
+              <td>
+                <span class="badge-pending" th:if="${s.status == 'PENDING'}"
+                  >Chờ xác nhận</span
+                >
+                <span class="badge-completed" th:if="${s.status == 'COMPLETED'}"
+                  >Hoàn thành</span
+                >
+                <span class="badge-cancelled" th:if="${s.status == 'CANCELLED'}"
+                  >Đã hủy</span
+                >
+                <span
+                  class="badge-dispatched"
+                  th:if="${s.status == 'CONFIRMED'}"
+                  >Đã xác nhận</span
+                >
+              </td>
+              <td class="text-right">
+                <form
+                  th:if="${s.canCancel}"
+                  th:action="@{/student/sessions/{id}/cancel(id=${s.id})}"
+                  method="post"
+                  class="inline-block"
+                  onsubmit="return confirm('Bạn có chắc muốn hủy lịch này?');"
+                >
+                  <button
+                    type="submit"
+                    class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <i class="fas fa-times mr-1"></i> Hủy
+                  </button>
+                </form>
+                <span
+                  th:if="${!s.canCancel && s.status == 'PENDING'}"
+                  class="text-slate-500 text-xs flex items-center justify-end gap-1"
+                >
+                  <i class="fas fa-lock"></i> Không thể hủy (< 24h)
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        class="py-16 text-center text-slate-400"
+        th:if="${sessions == null || sessions.isEmpty()}"
+      >
+        <i class="fas fa-calendar-times text-5xl opacity-30 mb-4"></i>
+        <p class="text-lg">Chưa có lịch hẹn nào</p>
+      </div>
+    </div>
+  </div>
+</html>

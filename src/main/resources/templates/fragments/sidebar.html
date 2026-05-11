@@ -1,0 +1,152 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <nav
+    th:fragment="sidebar"
+    class="w-64 bg-app-card backdrop-blur-xl border-r border-app-border flex flex-col fixed inset-y-0 z-50 transition-transform duration-300"
+  >
+    <div
+      class="p-6 flex items-center gap-3 text-xl font-bold text-cyan-400 border-b border-app-border"
+    >
+      <i class="fas fa-graduation-cap text-2xl"></i>
+      <span>Smart Academic</span>
+    </div>
+    <ul class="flex-1 py-4 space-y-1 overflow-y-auto">
+      <!-- STUDENT -->
+      <li
+        th:if="${currentUser != null && currentUser.role.name() == 'STUDENT'}"
+      >
+        <a
+          th:href="@{/student/dashboard}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/student/dashboard')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-home w-5 text-center"></i> Tổng quan
+        </a>
+      </li>
+      <li
+        th:if="${currentUser != null && currentUser.role.name() == 'STUDENT'}"
+      >
+        <a
+          th:href="@{/student/book}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/student/book')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-calendar-plus w-5 text-center"></i> Đặt lịch tư vấn
+        </a>
+      </li>
+      <li
+        th:if="${currentUser != null && currentUser.role.name() == 'STUDENT'}"
+      >
+        <a
+          th:href="@{/student/sessions}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/student/sessions')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-calendar-check w-5 text-center"></i> Lịch hẹn của tôi
+        </a>
+      </li>
+      <li
+        th:if="${currentUser != null && currentUser.role.name() == 'STUDENT'}"
+      >
+        <a
+          th:href="@{/student/academic-history}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/student/academic-history')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-history w-5 text-center"></i> Lịch sử tư vấn
+        </a>
+      </li>
+
+      <!-- LECTURER -->
+      <li
+        th:if="${currentUser != null && currentUser.role.name() == 'LECTURER'}"
+      >
+        <a
+          th:href="@{/lecturer/dashboard}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/lecturer/dashboard')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-home w-5 text-center"></i> Tổng quan
+        </a>
+      </li>
+      <li
+        th:if="${currentUser != null && currentUser.role.name() == 'LECTURER'}"
+      >
+        <a
+          th:href="@{/lecturer/pending-sessions}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/lecturer/pending')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-clock w-5 text-center"></i> Chờ xác nhận
+        </a>
+      </li>
+      <li
+        th:if="${currentUser != null && currentUser.role.name() == 'LECTURER'}"
+      >
+        <a
+          th:href="@{/lecturer/confirmed-sessions}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/lecturer/confirmed')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-clipboard-check w-5 text-center"></i> Chờ đánh giá
+        </a>
+      </li>
+
+      <!-- ADMIN -->
+      <li th:if="${currentUser != null && currentUser.role.name() == 'ADMIN'}">
+        <a
+          th:href="@{/admin/dashboard}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/admin/dashboard')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-home w-5 text-center"></i> Tổng quan
+        </a>
+      </li>
+      <li th:if="${currentUser != null && currentUser.role.name() == 'ADMIN'}">
+        <a
+          th:href="@{/admin/users}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/admin/users')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-users w-5 text-center"></i> Quản lý người dùng
+        </a>
+      </li>
+      <li th:if="${currentUser != null && currentUser.role.name() == 'ADMIN'}">
+        <a
+          th:href="@{/admin/departments}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/admin/departments')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-building w-5 text-center"></i> Quản lý khoa
+        </a>
+      </li>
+      <li th:if="${currentUser != null && currentUser.role.name() == 'ADMIN'}">
+        <a
+          th:href="@{/admin/equipments}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/admin/equipments')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-tools w-5 text-center"></i> Quản lý thiết bị
+        </a>
+      </li>
+      <li th:if="${currentUser != null && currentUser.role.name() == 'ADMIN'}">
+        <a
+          th:href="@{/admin/borrowings}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/admin/borrowings')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-box w-5 text-center"></i> Quản lý phiếu mượn
+        </a>
+      </li>
+
+      <!-- Common -->
+      <li th:if="${currentUser != null}">
+        <a
+          th:href="@{/profile}"
+          th:class="'flex items-center gap-3 px-6 py-3 text-sm transition-all duration-200 border-l-4 ' + (${#strings.contains(requestURI, '/profile')} ? 'text-slate-100 bg-cyan-500/10 border-cyan-500' : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-cyan-500/5')"
+        >
+          <i class="fas fa-user w-5 text-center"></i> Hồ sơ cá nhân
+        </a>
+      </li>
+    </ul>
+    <div
+      th:if="${currentUser != null}"
+      class="mt-auto border-t border-app-border"
+    >
+      <a
+        th:href="@{/auth/logout}"
+        class="flex items-center gap-3 px-6 py-4 text-sm text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors duration-200"
+      >
+        <i class="fas fa-sign-out-alt w-5 text-center"></i> Đăng xuất
+      </a>
+    </div>
+  </nav>
+</html>
