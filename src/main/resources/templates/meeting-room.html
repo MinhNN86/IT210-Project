@@ -233,8 +233,9 @@
   var remoteIsSharing = false;
   var remoteCameraStream = null;
   var remoteScreenStream = null;
-  var cameraStreamId = null;   // nhận dạng stream camera của remote
-  var screenStreamId = null;   // nhận dạng stream screen của remote
+  var screenTransceiver = null;
+  var videoTrackCount = 0;
+  var dummyTrack = null;
   var callStartTime = null;
   var timerInterval = null;
   var localMediaReady = false;
@@ -279,8 +280,8 @@
         remoteIsSharing = false;
         remoteCameraStream = null;
         remoteScreenStream = null;
-        cameraMid = null;
-        screenMid = null;
+        screenTransceiver = null;
+        videoTrackCount = 0;
         hideRemoteVideo();
         stopScreenShareLocal();
         switchToNormalLayout();
@@ -297,10 +298,6 @@
           pc.setRemoteDescription(new RTCSessionDescription(msg))
             .catch(function(e) {
               console.error('Answer error:', e);
-              if (pc) { pc.close(); pc = null; }
-              createPeerConnection();
-              addCameraTracks();
-              sendRenegotiationOffer();
             });
         }
         break;
@@ -310,22 +307,15 @@
         break;
 
       case 'screen-share-started':
-        // LECTURER dùng replaceTrack nên stream không đổi, chỉ nội dung thay đổi
-        // => Ghi đè remoteScreenStream = remoteCameraStream (đang phát màn hình)
+        // LECTURER dùng addTrack nên screen stream riêng biệt
+        // remoteScreenStream sẽ được ontrack handler cập nhật khi track mới đến
         remoteIsSharing = true;
-        if (remoteCameraStream) {
-          remoteScreenStream = remoteCameraStream;
-        }
         updateDisplay();
         showToast(msg.userName + ' đang chia sẻ màn hình');
         break;
 
       case 'screen-share-stopped':
-        // Track đã được replace lại về camera trong cùng stream
         remoteIsSharing = false;
-        remoteScreenStream = null;
-        // remoteCameraStream vẫn trỏ đúng vì là cùng object
-        screenStreamId = null;
         updateDisplay();
         showToast(msg.userName + ' đã dừng chia sẻ');
         break;
@@ -372,12 +362,6 @@
       .then(function() { sendSignal(pc.localDescription); })
       .catch(function(e) {
         console.error('Handle offer error:', e);
-        if (!isRenegotiation) {
-          if (pc) { pc.close(); pc = null; }
-          createPeerConnection();
-          addCameraTracks();
-          sendRenegotiationOffer();
-        }
       });
   }
 
@@ -400,8 +384,8 @@
     if (pc) { pc.close(); }
     remoteCameraStream = null;
     remoteScreenStream = null;
-    cameraStreamId = null;
-    screenStreamId = null;
+    screenTransceiver = null;
+    videoTrackCount = 0;
     remoteIsSharing = false;
     pc = new RTCPeerConnection(iceServers);
 
@@ -410,30 +394,15 @@
     };
 
     pc.ontrack = function(event) {
-      var stream = event.streams[0];
-      if (!stream) return;
+      if (event.track.kind === 'audio') return;
 
-      if (event.track.kind === 'audio') return; // bỏ qua audio track
+      videoTrackCount++;
+      var stream = (event.streams && event.streams.length > 0) ? event.streams[0] : new MediaStream([event.track]);
 
-      // Phân biệt camera vs screen dựa trên stream.id (ổn định hơn mid-order)
-      if (!cameraStreamId) {
-        // Track video đầu tiên nhận => camera
-        cameraStreamId = stream.id;
+      if (videoTrackCount === 1) {
         remoteCameraStream = stream;
-      } else if (stream.id === cameraStreamId) {
-        remoteCameraStream = stream;
-      } else {
-        // Stream id khác => screen share
-        if (!screenStreamId) screenStreamId = stream.id;
+      } else if (videoTrackCount === 2) {
         remoteScreenStream = stream;
-        remoteIsSharing = true;
-        event.track.onended = function() {
-          remoteScreenStream = null;
-          remoteIsSharing = false;
-          screenStreamId = null;
-          updateDisplay();
-          showToast('Đối phương đã dừng chia sẻ màn hình');
-        };
       }
       updateDisplay();
     };
@@ -460,6 +429,23 @@
     localStream.getTracks().forEach(function(track) {
       pc.addTrack(track, localStream);
     });
+
+    // Tạo sẵn một kênh video bằng dummy track để truyền màn hình sau này (tránh renegotiation)
+    if (USER_ROLE === 'LECTURER') {
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = 10; canvas.height = 10;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, 10, 10);
+        var dummyStream = canvas.captureStream(1); // 1 fps
+        dummyTrack = dummyStream.getVideoTracks()[0];
+        var sender = pc.addTrack(dummyTrack, dummyStream);
+        screenTransceiver = { sender: sender };
+      } catch(e) {
+        console.error("Canvas captureStream not supported", e);
+      }
+    }
   }
 
   /* ---- SCREEN SHARE (chỉ LECTURER) ---- */
@@ -475,42 +461,23 @@
 
         if (!pc) { showToast('Chưa có kết nối'); return; }
 
-        // Tìm video sender hiện tại (camera)
-        var videoSender = pc.getSenders().find(function(s) {
-          return s.track && s.track.kind === 'video';
-        });
-
-        if (videoSender) {
-          // Dùng replaceTrack — KHÔNG cần renegotiation, không gây disconnect
-          videoSender.replaceTrack(screenTrack)
-            .then(function() {
-              isScreenSharing = true;
-              document.getElementById('btnScreen').classList.add('active');
-              var screenEl = document.getElementById('screenVideo');
-              screenEl.srcObject = stream;
-              screenEl.style.display = 'block';
-              document.getElementById('screenPlaceholder').style.display = 'none';
-              screenEl.play().catch(function() {});
-              updateDisplay();
-              sendSignal({ type: 'screen-share-started', userName: USER_NAME });
-              showToast('Đang chia sẻ màn hình');
-            })
-            .catch(function(e) { console.error('replaceTrack error:', e); stream.getTracks().forEach(function(t){t.stop();}); });
+        // Thay vì addTrack làm thay đổi SDP gây disconnect, ta dùng replaceTrack trên kênh đã tạo sẵn
+        if (screenTransceiver && screenTransceiver.sender) {
+          screenTransceiver.sender.replaceTrack(screenTrack);
         } else {
-          // Chưa có sender, addTrack và renegotiate
-          screenStreamId = stream.id;
           pc.addTrack(screenTrack, stream);
-          isScreenSharing = true;
-          document.getElementById('btnScreen').classList.add('active');
-          var screenEl = document.getElementById('screenVideo');
-          screenEl.srcObject = stream;
-          screenEl.style.display = 'block';
-          document.getElementById('screenPlaceholder').style.display = 'none';
-          screenEl.play().catch(function() {});
-          updateDisplay();
-          sendSignal({ type: 'screen-share-started', userName: USER_NAME });
-          showToast('Đang chia sẻ màn hình');
         }
+
+        isScreenSharing = true;
+        document.getElementById('btnScreen').classList.add('active');
+        var screenEl = document.getElementById('screenVideo');
+        screenEl.srcObject = stream;
+        screenEl.style.display = 'block';
+        document.getElementById('screenPlaceholder').style.display = 'none';
+        screenEl.play().catch(function() {});
+        updateDisplay();
+        sendSignal({ type: 'screen-share-started', userName: USER_NAME });
+        showToast('Đang chia sẻ màn hình');
       })
       .catch(function(err) { console.error('getDisplayMedia error:', err); });
   }
@@ -519,14 +486,18 @@
     if (!isScreenSharing) return;
     isScreenSharing = false;
 
-    // Khôi phục lại camera track vào video sender
-    if (pc && localStream) {
-      var camTrack = localStream.getVideoTracks()[0];
-      var videoSender = pc.getSenders().find(function(s) {
-        return s.track && s.track.kind === 'video';
-      });
-      if (videoSender && camTrack) {
-        videoSender.replaceTrack(camTrack).catch(function(e) { console.error('restore cam error:', e); });
+    // Thay track lại thành dummy track để dừng chia sẻ mà không cấu hình lại WebRTC
+    if (screenTransceiver && screenTransceiver.sender && dummyTrack) {
+      screenTransceiver.sender.replaceTrack(dummyTrack);
+    } else if (pc && screenStream) {
+      var screenTrack = screenStream.getVideoTracks()[0];
+      if (screenTrack) {
+        var screenSender = pc.getSenders().find(function(s) {
+          return s.track && s.track.id === screenTrack.id;
+        });
+        if (screenSender) {
+          pc.removeTrack(screenSender);
+        }
       }
     }
 
@@ -601,10 +572,18 @@
         document.getElementById('pipRemotePlaceholder').style.display = 'flex';
       }
     } else {
-      // STUDENT side: LECTURER dùng replaceTrack, không có camera ringêng
-      document.getElementById('pipRemoteVideo').style.display = 'none';
-      document.getElementById('pipRemotePlaceholder').style.display = 'flex';
-      document.getElementById('pipRemotePlaceholder').querySelector('span').textContent = 'Giảng viên';
+      // STUDENT side: LECTURER gửi screen track riêng, camera vẫn giữ nguyên
+      if (remoteCameraStream) {
+        var pipRemoteVideo = document.getElementById('pipRemoteVideo');
+        pipRemoteVideo.srcObject = remoteCameraStream;
+        pipRemoteVideo.style.display = 'block';
+        document.getElementById('pipRemotePlaceholder').style.display = 'none';
+        pipRemoteVideo.play().catch(function() {});
+      } else {
+        document.getElementById('pipRemoteVideo').style.display = 'none';
+        document.getElementById('pipRemotePlaceholder').style.display = 'flex';
+        document.getElementById('pipRemotePlaceholder').querySelector('span').textContent = 'Giảng viên';
+      }
     }
   }
 
