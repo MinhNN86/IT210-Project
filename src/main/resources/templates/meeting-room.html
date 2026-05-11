@@ -470,7 +470,7 @@
         var ctx = canvas.getContext('2d');
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, 10, 10);
-        var dummyStream = canvas.captureStream(1); // 1 fps
+        var dummyStream = canvas.captureStream(30); // 30 fps để không bị khoá tốc độ khung hình khi replaceTrack
         dummyTrack = dummyStream.getVideoTracks()[0];
         var sender = pc.addTrack(dummyTrack, dummyStream);
 
@@ -478,7 +478,8 @@
         try {
           var params = sender.getParameters();
           if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
-          params.encodings[0].maxBitrate = 5000000; // 5 Mbps (chất lượng cao)
+          params.encodings[0].maxBitrate = 8000000; // 8 Mbps (chất lượng rất cao)
+          params.degradationPreference = 'maintain-resolution'; // Giữ độ phân giải cao nhất có thể
           sender.setParameters(params).catch(function(e){});
         } catch(e) {}
 
@@ -508,7 +509,7 @@
         screenTrack.onended = function() { stopScreenShareLocal(); };
 
         if ('contentHint' in screenTrack) {
-          screenTrack.contentHint = 'detail'; // Ưu tiên độ nét chữ (text) thay vì độ mượt
+          screenTrack.contentHint = 'detail'; // Ưu tiên độ nét chữ (text)
         }
 
         if (!pc) { showToast('Chưa có kết nối'); return; }
@@ -528,8 +529,8 @@
           try {
             var params = cameraSender.getParameters();
             if (params.encodings && params.encodings.length > 0) {
-              params.encodings[0].maxBitrate = 150000; // 150 kbps
-              params.encodings[0].scaleResolutionDownBy = 2; // Giảm một nửa độ phân giải
+              params.encodings[0].maxBitrate = 300000; // 300 kbps (mức trung bình thấp, đủ nét cho khung nhỏ)
+              params.encodings[0].scaleResolutionDownBy = 2; // Giảm một nửa độ phân giải thay vì 4 lần
               cameraSender.setParameters(params).catch(function(e){});
             }
           } catch(e) {}
