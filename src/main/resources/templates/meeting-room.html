@@ -242,6 +242,7 @@
   var hasRemotePeer = false;
   var wsConnected = false;      // tránh gọi setupLocalMedia nhiều lần
   var pendingScreenShare = false; // chờ state stable để add screen track
+  var pendingOffer = null;
 
   var iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
 
@@ -336,12 +337,23 @@
         showLocalVideo(stream);
         localMediaReady = true;
         startTimer();
-        if (hasRemotePeer && USER_ROLE === 'LECTURER') initiateConnection();
+        if (pendingOffer) {
+          handleOffer(pendingOffer);
+          pendingOffer = null;
+        } else if (hasRemotePeer && USER_ROLE === 'LECTURER') {
+          initiateConnection();
+        }
       })
       .catch(function(err) {
         console.error('getUserMedia:', err);
         localMediaReady = true;
         showToast('Không thể truy cập camera/mic');
+        if (pendingOffer) {
+          handleOffer(pendingOffer);
+          pendingOffer = null;
+        } else if (hasRemotePeer && USER_ROLE === 'LECTURER') {
+          initiateConnection();
+        }
       });
   }
 
@@ -352,6 +364,10 @@
   }
 
   function handleOffer(msg) {
+    if (!localMediaReady) {
+      pendingOffer = msg;
+      return;
+    }
     var isRenegotiation = (pc && pc.signalingState !== 'closed');
     if (!isRenegotiation) {
       createPeerConnection();
