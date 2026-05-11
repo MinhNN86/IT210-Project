@@ -234,6 +234,7 @@
   var remoteCameraStream = null;
   var remoteScreenStream = null;
   var screenTransceiver = null;
+  var cameraSender = null;
   var videoTrackCount = 0;
   var dummyTrack = null;
   var callStartTime = null;
@@ -313,12 +314,14 @@
         remoteIsSharing = true;
         updateDisplay();
         showToast(msg.userName + ' đang chia sẻ màn hình');
+        document.getElementById('pipRemoteVideo').style.filter = 'blur(1px) opacity(0.8)';
         break;
 
       case 'screen-share-stopped':
         remoteIsSharing = false;
         updateDisplay();
         showToast(msg.userName + ' đã dừng chia sẻ');
+        document.getElementById('pipRemoteVideo').style.filter = 'none';
         break;
 
       case 'mute-changed':
@@ -404,6 +407,7 @@
     remoteCameraStream = null;
     remoteScreenStream = null;
     screenTransceiver = null;
+    cameraSender = null;
     videoTrackCount = 0;
     remoteIsSharing = false;
     pc = new RTCPeerConnection(iceServers);
@@ -448,6 +452,7 @@
     localStream.getTracks().forEach(function(track) {
       var sender = pc.addTrack(track, localStream);
       if (track.kind === 'video') {
+        cameraSender = sender;
         try {
           var params = sender.getParameters();
           if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
@@ -517,6 +522,20 @@
 
         isScreenSharing = true;
         document.getElementById('btnScreen').classList.add('active');
+
+        // Tối ưu băng thông: Giảm bitrate và độ phân giải của camera khi share màn hình
+        if (cameraSender) {
+          try {
+            var params = cameraSender.getParameters();
+            if (params.encodings && params.encodings.length > 0) {
+              params.encodings[0].maxBitrate = 150000; // 150 kbps
+              params.encodings[0].scaleResolutionDownBy = 2; // Giảm một nửa độ phân giải
+              cameraSender.setParameters(params).catch(function(e){});
+            }
+          } catch(e) {}
+        }
+        document.getElementById('pipLocalVideo').style.filter = 'blur(1px) opacity(0.8)';
+
         var screenEl = document.getElementById('screenVideo');
         screenEl.srcObject = stream;
         screenEl.style.display = 'block';
@@ -552,6 +571,19 @@
       screenStream.getTracks().forEach(function(t) { t.stop(); });
       screenStream = null;
     }
+
+    // Khôi phục băng thông camera
+    if (cameraSender) {
+      try {
+        var params = cameraSender.getParameters();
+        if (params.encodings && params.encodings.length > 0) {
+          params.encodings[0].maxBitrate = 2500000; // 2.5 Mbps
+          params.encodings[0].scaleResolutionDownBy = 1; // Khôi phục độ phân giải
+          cameraSender.setParameters(params).catch(function(e){});
+        }
+      } catch(e) {}
+    }
+    document.getElementById('pipLocalVideo').style.filter = 'none';
 
     var btn = document.getElementById('btnScreen');
     if (btn) btn.classList.remove('active');
