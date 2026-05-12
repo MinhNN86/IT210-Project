@@ -1,0 +1,197 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/header :: header('Thiết lập 2FA')}"></head>
+  <body
+    class="bg-app-bg text-slate-200 font-sans antialiased min-h-screen flex items-center justify-center relative overflow-hidden"
+  >
+    <!-- Background glow -->
+    <div
+      class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/20 blur-[120px] pointer-events-none"
+    ></div>
+    <div
+      class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none"
+    ></div>
+
+    <div class="glass-card w-full max-w-lg p-8 md:p-10 relative z-10 mx-4">
+      <div class="text-center mb-8">
+        <div
+          class="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-500/20 flex items-center justify-center"
+        >
+          <i class="fas fa-lock text-2xl text-indigo-400"></i>
+        </div>
+        <h1
+          class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-indigo-600 bg-clip-text text-transparent mb-2"
+        >
+          Xác thực hai lớp (2FA)
+        </h1>
+        <p class="text-slate-400 text-sm">
+          Bảo vệ tài khoản của bạn với lớp xác thực bổ sung
+        </p>
+      </div>
+
+      <!-- Status badge -->
+      <div class="flex items-center justify-center mb-6">
+        <div
+          th:if="${twoFactorEnabled}"
+          class="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30"
+        >
+          <i class="fas fa-check-circle text-emerald-400"></i>
+          <span class="text-emerald-400 text-sm font-medium">Đã kích hoạt</span>
+        </div>
+        <div
+          th:unless="${twoFactorEnabled}"
+          class="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30"
+        >
+          <i class="fas fa-exclamation-triangle text-amber-400"></i>
+          <span class="text-amber-400 text-sm font-medium">Chưa kích hoạt</span>
+        </div>
+      </div>
+
+      <!-- Success message -->
+      <div
+        th:if="${successMessage}"
+        class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-3"
+      >
+        <i class="fas fa-check-circle"></i>
+        <span th:text="${successMessage}"></span>
+      </div>
+
+      <!-- Error message -->
+      <div
+        th:if="${errorMessage}"
+        class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center gap-3"
+      >
+        <i class="fas fa-exclamation-circle"></i>
+        <span th:text="${errorMessage}"></span>
+      </div>
+
+      <!-- ==================== ENABLE 2FA SECTION ==================== -->
+      <div th:unless="${twoFactorEnabled}">
+        <!-- Step 1: Generate QR Code -->
+        <div th:unless="${qrImageBase64}" class="text-center">
+          <div class="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+            <h3 class="text-slate-300 font-medium mb-3">
+              <i class="fas fa-steps mr-2 text-indigo-400"></i>Cách thiết lập:
+            </h3>
+            <ol
+              class="text-sm text-slate-400 space-y-2 text-left list-decimal list-inside"
+            >
+              <li>Tải ứng dụng <strong class="text-slate-300">Google Authenticator</strong> trên điện thoại</li>
+              <li>Nhấn nút bên dưới để tạo mã QR</li>
+              <li>Quét mã QR bằng ứng dụng</li>
+              <li>Nhập mã xác thực 6 số để hoàn tất</li>
+            </ol>
+          </div>
+
+          <form th:action="@{/auth/2fa-setup/generate}" method="post">
+            <button type="submit" class="btn-primary w-full">
+              <i class="fas fa-qrcode"></i> Tạo mã QR
+            </button>
+          </form>
+        </div>
+
+        <!-- Step 2: Show QR Code and verify -->
+        <div th:if="${qrImageBase64}">
+          <div class="text-center mb-6">
+            <p class="text-slate-400 text-sm mb-4">
+              Quét mã QR bên dưới bằng ứng dụng Google Authenticator:
+            </p>
+            <div
+              class="inline-block p-4 bg-white rounded-xl shadow-lg"
+            >
+              <img
+                th:src="'data:image/png;base64,' + ${qrImageBase64}"
+                alt="QR Code"
+                class="w-[300px] h-[300px]"
+              />
+            </div>
+          </div>
+
+          <!-- Show secret key as backup -->
+          <div
+            th:if="${secret}"
+            class="mb-6 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50"
+          >
+            <p class="text-slate-400 text-xs mb-1">
+              <i class="fas fa-key mr-1"></i>Khóa bảo mật (nhập thủ công nếu không quét được QR):
+            </p>
+            <p
+              class="text-indigo-400 font-mono text-sm break-all select-all"
+              th:text="${secret}"
+            ></p>
+          </div>
+
+          <!-- Verify code to enable -->
+          <form th:action="@{/auth/2fa-setup/enable}" method="post" class="space-y-4">
+            <div>
+              <label for="enableCode" class="form-label"
+                >Nhập mã xác thực 6 số từ Google Authenticator:</label
+              >
+              <input
+                type="text"
+                id="enableCode"
+                name="code"
+                placeholder="000000"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                inputmode="numeric"
+                required
+                class="form-input text-center text-2xl tracking-[0.5em] font-mono"
+                oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+              />
+            </div>
+            <button type="submit" class="btn-primary w-full">
+              <i class="fas fa-shield-alt"></i> Kích hoạt 2FA
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ==================== DISABLE 2FA SECTION ==================== -->
+      <div th:if="${twoFactorEnabled}">
+        <div class="mb-6 p-4 rounded-xl bg-rose-500/5 border border-rose-500/20">
+          <p class="text-slate-400 text-sm">
+            <i class="fas fa-exclamation-triangle text-amber-400 mr-2"></i>
+            Vô hiệu hóa 2FA sẽ làm giảm bảo mật tài khoản. Bạn chắc chắn muốn tiếp tục?
+          </p>
+        </div>
+
+        <form th:action="@{/auth/2fa-setup/disable}" method="post" class="space-y-4">
+          <div>
+            <label for="disableCode" class="form-label"
+              >Nhập mã xác thực 6 số để xác nhận:</label
+            >
+            <input
+              type="text"
+              id="disableCode"
+              name="code"
+              placeholder="000000"
+              maxlength="6"
+              pattern="[0-9]{6}"
+              inputmode="numeric"
+              required
+              class="form-input text-center text-2xl tracking-[0.5em] font-mono"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full py-2.5 px-4 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 font-medium hover:bg-rose-500/30 transition-all"
+          >
+            <i class="fas fa-unlock"></i> Vô hiệu hóa 2FA
+          </button>
+        </form>
+      </div>
+
+      <!-- Back link -->
+      <div class="mt-6 pt-6 border-t border-slate-700/50 text-center">
+        <a
+          th:href="@{/profile}"
+          class="text-slate-400 hover:text-slate-300 text-sm transition-colors"
+        >
+          <i class="fas fa-arrow-left mr-1"></i> Quay lại hồ sơ
+        </a>
+      </div>
+    </div>
+  </body>
+</html>

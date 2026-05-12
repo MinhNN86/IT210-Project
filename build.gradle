@@ -33,6 +33,13 @@ dependencies {
     // BCrypt password hashing (without full Spring Security)
     implementation 'org.springframework.security:spring-security-crypto'
 
+    // Google Authenticator (TOTP 2FA)
+    implementation 'com.warrenstrange:googleauth:1.5.0'
+
+    // QR Code generation
+    implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.google.zxing:javase:3.5.3'
+
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.mysql:mysql-connector-j'

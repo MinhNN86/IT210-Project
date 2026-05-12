@@ -12,13 +12,17 @@ import com.projectit210.repository.DepartmentRepository;
 import com.projectit210.repository.LecturerRepository;
 import com.projectit210.repository.UserRepository;
 import com.projectit210.service.AuthService;
+import com.projectit210.util.TotpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Triển khai AuthService - Đăng ký & Đăng nhập (CORE-01)
+ * Triển khai AuthService - Đăng ký, Đăng nhập & 2FA (CORE-01)
  */
 @Service
 @RequiredArgsConstructor
@@ -28,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final LecturerRepository lecturerRepository;
     private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TotpUtil totpUtil;
 
     @Override
     @Transactional
@@ -69,6 +74,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(role)
                 .fullName(request.getFullName())
                 .isActive(true)
+                .twoFactorEnabled(false)
                 .build();
 
         user = userRepository.save(user);
@@ -107,5 +113,110 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return user;
+    }
+
+    @Override
+    public User verifyTotp(String userId, String code) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("Người dùng không tồn tại"));
+
+        if (!Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            throw new BadRequestException("2FA chưa được kích hoạt cho tài khoản này");
+        }
+
+        if (user.getTwoFactorSecret() == null) {
+            throw new BadRequestException("Không tìm thấy khóa bảo mật 2FA");
+        }
+
+        try {
+            int totpCode = Integer.parseInt(code);
+            if (!totpUtil.verifyCode(user.getTwoFactorSecret(), totpCode)) {
+                throw new BadRequestException("Mã xác thực không đúng. Vui lòng thử lại.");
+            }
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("Mã xác thực phải là số");
+        }
+
+        return user;
+    }
+
+    @Override
+    @Transactional
+    public Map<String, String> generateTwoFactorSetup(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        if (Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            throw new BadRequestException("2FA đã được kích hoạt. Vui lòng vô hiệu hóa trước khi thiết lập lại.");
+        }
+
+        // Generate new secret
+        String secret = totpUtil.generateSecret();
+
+        // Temporarily store the secret (not enabled yet)
+        user.setTwoFactorSecret(secret);
+        userRepository.save(user);
+
+        // Generate QR code (300x300 for better scanning)
+        String otpAuthUrl = totpUtil.getOtpAuthUrl(user.getUsername(), secret);
+        String qrImageBase64 = totpUtil.generateQrCodeBase64(otpAuthUrl, 300, 300);
+
+        Map<String, String> result = new HashMap<>();
+        result.put("secret", secret);
+        result.put("qrImageBase64", qrImageBase64);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public boolean enableTwoFactor(String userId, String code) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        if (user.getTwoFactorSecret() == null) {
+            throw new BadRequestException("Vui lòng tạo khóa bảo mật trước khi kích hoạt 2FA");
+        }
+
+        if (Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            throw new BadRequestException("2FA đã được kích hoạt");
+        }
+
+        try {
+            int totpCode = Integer.parseInt(code);
+            if (!totpUtil.verifyCode(user.getTwoFactorSecret(), totpCode)) {
+                throw new BadRequestException("Mã xác thực không đúng. Vui lòng thử lại.");
+            }
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("Mã xác thực phải là số");
+        }
+
+        user.setTwoFactorEnabled(true);
+        userRepository.save(user);
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean disableTwoFactor(String userId, String code) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        if (!Boolean.TRUE.equals(user.getTwoFactorEnabled())) {
+            throw new BadRequestException("2FA chưa được kích hoạt");
+        }
+
+        try {
+            int totpCode = Integer.parseInt(code);
+            if (!totpUtil.verifyCode(user.getTwoFactorSecret(), totpCode)) {
+                throw new BadRequestException("Mã xác thực không đúng. Vui lòng thử lại.");
+            }
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("Mã xác thực phải là số");
+        }
+
+        user.setTwoFactorEnabled(false);
+        user.setTwoFactorSecret(null);
+        userRepository.save(user);
+        return true;
     }
 }

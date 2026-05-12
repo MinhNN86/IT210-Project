@@ -72,7 +72,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private boolean isPublicPath(String path) {
         return path.equals("/") ||
-               path.startsWith("/auth/") ||
+               (path.startsWith("/auth/") && !path.startsWith("/auth/2fa-setup")) ||
                path.startsWith("/css/") ||
                path.startsWith("/js/") ||
                path.startsWith("/images/") ||
