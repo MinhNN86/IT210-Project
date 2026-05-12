@@ -24,6 +24,8 @@ CREATE TABLE users (
     avatar_url VARCHAR(255),
     address TEXT,
     is_active BOOLEAN DEFAULT TRUE,
+    two_factor_enabled BOOLEAN DEFAULT FALSE,
+    two_factor_secret VARCHAR(100) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
